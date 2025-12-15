@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ai:
+    build:
+      context: ../services/ai
+    environment:
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+    ports:
+      - "8001:8001"
+
+  sim:
+    build:
+      context: ../services/sim
+    ports:
+      - "8002:8002"
+
+  backend:
+    build:
+      context: ../backend
+    environment:
+      HTTP_ADDR: ${BACKEND_HTTP_ADDR}
+      JWT_SECRET: ${BACKEND_JWT_SECRET}
+      CORS_ORIGINS: ${BACKEND_CORS_ORIGINS}
+      DB_DSN: ${BACKEND_DB_DSN}
+      AI_BASE_URL: ${BACKEND_AI_BASE_URL}
+      SIM_BASE_URL: ${BACKEND_SIM_BASE_URL}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ai:
+        condition: service_started
+      sim:
+        condition: service_started
+
+volumes:
+  mysql_data:
+
