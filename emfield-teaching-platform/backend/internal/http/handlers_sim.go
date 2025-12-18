@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -40,4 +41,43 @@ func (h *simHandlers) Laplace2D(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// SimProxy is a generic handler that proxies simulation requests to the Python service
+// It reads the request body and forwards it to the specified path
+func (h *simHandlers) SimProxy(path string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+			return
+		}
+
+		resp, err := h.sim.ProxyRequest(c.Request.Context(), path, body)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.Data(http.StatusOK, "application/json", resp)
+	}
+}
+
+// CalcProxy is a generic handler for numerical computation endpoints
+func (h *simHandlers) CalcProxy(path string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		body, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+			return
+		}
+
+		resp, err := h.sim.ProxyRequest(c.Request.Context(), path, body)
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.Data(http.StatusOK, "application/json", resp)
+	}
 }

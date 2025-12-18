@@ -1,3 +1,13 @@
+"""
+Simulation Service for Electromagnetic Field Teaching Platform.
+
+Provides numerical simulation and computation APIs for:
+- Electrostatics (point charges, Laplace equation, Gauss's law)
+- Magnetostatics (Biot-Savart, Ampere's law)
+- Wave propagation (1D FDTD, Fresnel coefficients)
+- Numerical tools (integration, differentiation, vector operations)
+"""
+
 from __future__ import annotations
 
 import base64
@@ -10,10 +20,30 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+# Import route modules
+from app.routes.electrostatics import router as electrostatics_router
+from app.routes.magnetostatics import router as magnetostatics_router
+from app.routes.wave import router as wave_router
+from app.routes.numerical import router as numerical_router
+
 matplotlib.use("Agg")
 
-app = FastAPI(title="Simulation Service", version="0.1.0")
+app = FastAPI(
+    title="Simulation Service",
+    version="0.2.0",
+    description="电磁场仿真与数值计算服务",
+)
 
+# Include routers
+app.include_router(electrostatics_router)
+app.include_router(magnetostatics_router)
+app.include_router(wave_router)
+app.include_router(numerical_router)
+
+
+# ============================================================================
+# Legacy Laplace2D endpoint (kept for backward compatibility)
+# ============================================================================
 
 class Laplace2DRequest(BaseModel):
     nx: Annotated[int, Field(ge=10, le=200)] = 60
@@ -40,6 +70,11 @@ def healthz() -> dict[str, str]:
 
 @app.post("/v1/sim/laplace2d", response_model=Laplace2DResponse)
 def laplace2d(req: Laplace2DRequest) -> Laplace2DResponse:
+    """
+    Solve 2D Laplace equation with Dirichlet boundary conditions.
+
+    This is the original demo endpoint, kept for backward compatibility.
+    """
     try:
         v = np.zeros((req.ny, req.nx), dtype=np.float64)
         v[0, :] = req.v_top

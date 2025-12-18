@@ -14,6 +14,11 @@ type Config struct {
 
 	AIBaseURL  string
 	SimBaseURL string
+
+	// WeChat Work (企业微信) configuration
+	WecomCorpID  string
+	WecomAgentID string
+	WecomSecret  string
 }
 
 func Load() Config {
@@ -31,13 +36,21 @@ func Load() Config {
 	aiBaseURL := strings.TrimRight(getenv("AI_BASE_URL", "http://127.0.0.1:8001"), "/")
 	simBaseURL := strings.TrimRight(getenv("SIM_BASE_URL", "http://127.0.0.1:8002"), "/")
 
+	// WeChat Work config (optional)
+	wecomCorpID := getenv("WECOM_CORPID", "")
+	wecomAgentID := getenv("WECOM_AGENTID", "")
+	wecomSecret := getenv("WECOM_SECRET", "")
+
 	return Config{
-		HTTPAddr:    httpAddr,
-		JWTSecret:   jwtSecret,
-		CorsOrigins: corsOrigins,
-		DBDsn:       dbDsn,
-		AIBaseURL:   aiBaseURL,
-		SimBaseURL:  simBaseURL,
+		HTTPAddr:     httpAddr,
+		JWTSecret:    jwtSecret,
+		CorsOrigins:  corsOrigins,
+		DBDsn:        dbDsn,
+		AIBaseURL:    aiBaseURL,
+		SimBaseURL:   simBaseURL,
+		WecomCorpID:  wecomCorpID,
+		WecomAgentID: wecomAgentID,
+		WecomSecret:  wecomSecret,
 	}
 }
 

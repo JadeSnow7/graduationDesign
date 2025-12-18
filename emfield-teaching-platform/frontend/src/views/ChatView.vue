@@ -10,6 +10,7 @@ type ChatResp = { reply: string; model?: string }
 const auth = useAuthStore()
 
 const mode = ref<'tutor' | 'grader'>('tutor')
+const useRag = ref(false)
 const input = ref('')
 const messages = ref<ChatMessage[]>([])
 const loading = ref(false)
@@ -29,7 +30,7 @@ async function send() {
     const resp = await apiFetch<ChatResp>('/ai/chat', {
       method: 'POST',
       token: auth.token,
-      body: JSON.stringify({ mode: mode.value, messages: messages.value }),
+      body: JSON.stringify({ mode: useRag.value ? `${mode.value}_rag` : mode.value, messages: messages.value }),
     })
     messages.value.push({ role: 'assistant', content: resp.reply })
   } catch (e: any) {
@@ -57,6 +58,10 @@ function clearChat() {
           <option value="tutor">讲解（tutor）</option>
           <option value="grader">批改（grader）</option>
         </select>
+        <label class="muted" style="display: inline-flex; align-items: center; gap: 6px; margin-left: 8px">
+          <input v-model="useRag" type="checkbox" />
+          知识库（GraphRAG）
+        </label>
         <button class="secondary" @click="clearChat()">清空</button>
       </div>
     </div>
@@ -77,4 +82,3 @@ function clearChat() {
     </div>
   </div>
 </template>
-

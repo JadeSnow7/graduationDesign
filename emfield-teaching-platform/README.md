@@ -35,3 +35,4 @@
 - 架构：`docs/ARCHITECTURE.md`
 - API：`docs/API.md`
 - 开发：`docs/DEV.md`
+- GraphRAG：`docs/GRAPH_RAG.md`
