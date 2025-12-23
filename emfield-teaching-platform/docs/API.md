@@ -18,6 +18,23 @@
 {"access_token":"...","token_type":"Bearer","expires_in":86400}
 ```
 
+### 2.1 企业微信 OAuth 登录（可选）
+需要后端配置环境变量：`WECOM_CORPID` / `WECOM_AGENTID` / `WECOM_SECRET`。
+
+- `GET /auth/wecom/oauth-url?redirect_uri=...`：生成企业微信授权地址（前端跳转用）
+- `POST /auth/wecom`：用 `code` 换取 JWT
+- `POST /auth/wecom/jsconfig`：企业微信 JS-SDK 签名（可选）
+
+`POST /auth/wecom` 请求：
+```json
+{"code":"xxxxxx"}
+```
+
+响应（同账号密码登录）：
+```json
+{"access_token":"...","token_type":"Bearer","expires_in":86400,"user_id":"...","name":"..."}
+```
+
 ## 3. 当前用户
 - `GET /auth/me`（Header：`Authorization: Bearer <token>`）
 

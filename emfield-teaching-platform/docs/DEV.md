@@ -23,10 +23,19 @@ docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build
 - `LLM_API_KEY`：密钥
 - `LLM_MODEL`：模型名（例如 `qwen-plus`）
 
-## 4. Go 依赖下载问题（可选）
+## 4. 企业微信 OAuth 登录（可选）
+在 `deploy/.env` 配置以下变量，并重启后端：
+- `WECOM_CORPID`
+- `WECOM_AGENTID`
+- `WECOM_SECRET`
+
+前端在企业微信内置浏览器中会显示“企业微信授权登录”入口；授权成功后，后端会按 `wecom_user_id` 自动创建本地用户（默认 `student` 角色，可在数据库中调整）。
+
+> 提示：企业微信侧需要配置应用与授权回调域名（redirect_uri 白名单）；原型阶段也可直接使用账号密码登录，不依赖企业微信配置。
+
+## 5. Go 依赖下载问题（可选）
 若 `go mod tidy` 在网络环境下拉取失败，可临时使用：
 ```bash
 export GOSUMDB=off
 export GOPROXY=https://goproxy.cn,direct
 ```
-
