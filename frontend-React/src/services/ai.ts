@@ -26,9 +26,9 @@ async function* mockStreamGenerator(): AsyncGenerator<string> {
 }
 
 /**
- * Stream chat with AI service using SSE
- * @param payload - Chat messages and options
- * @param options - AbortSignal for cancellation and token callback
+ * Stream chat with AI service
+ * Note: Backend doesn't support true streaming, so we fetch the full response
+ * and simulate streaming by outputting character by character
  */
 export async function streamChat(
     payload: ChatPayload,
@@ -53,15 +53,18 @@ export async function streamChat(
         return;
     }
 
-    // Real API call
+    // Real API call (non-streaming, then simulate stream)
     try {
-        const response = await fetch(`${API_BASE_URL}/ai/chat?stream=true`, {
+        const response = await fetch(`${API_BASE_URL}/ai/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders(),
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                mode: payload.mode || 'tutor',
+                messages: payload.messages,
+            }),
             signal: options.signal,
         });
 
@@ -69,42 +72,20 @@ export async function streamChat(
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-            throw new Error('No readable stream');
+        const data = await response.json() as { reply: string; model: string | null };
+
+        // Simulate streaming by outputting character by character
+        const reply = data.reply || '';
+        for (let i = 0; i < reply.length; i++) {
+            if (options.signal.aborted) break;
+            options.onToken(reply[i]);
+            // Small delay to simulate streaming effect
+            await new Promise((resolve) => setTimeout(resolve, 15));
         }
 
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-
-            if (done) {
-                options.onFinish?.();
-                break;
-            }
-
-            buffer += decoder.decode(value, { stream: true });
-
-            // Parse SSE format: "data: xxx\n\n"
-            const lines = buffer.split('\n\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const token = line.slice(6);
-                    if (token === '[DONE]') {
-                        options.onFinish?.();
-                        return;
-                    }
-                    options.onToken(token);
-                }
-            }
-        }
+        options.onFinish?.();
     } catch (error) {
         if ((error as Error).name === 'AbortError') {
-            // User aborted, not an error
             return;
         }
         options.onError?.(error as Error);

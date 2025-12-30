@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
-import { courseService, type Course } from '@/services/course';
+import { courseApi, type Course } from '@/api/course';
 
 interface CourseContextValue {
     course: Course | null;
@@ -25,8 +25,8 @@ export function CourseProvider({ children }: { children: ReactNode }) {
         setIsLoading(true);
         setError(null);
 
-        courseService
-            .getById(courseId)
+        courseApi
+            .get(courseId)
             .then((data) => {
                 setCourse(data ?? null);
                 setIsLoading(false);

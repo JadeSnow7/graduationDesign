@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
 from functools import lru_cache
-from typing import Any, Literal
+from typing import Any, AsyncIterator, Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.graphrag.index import GraphRAGIndex
@@ -22,6 +24,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     mode: str | None = None
     messages: list[ChatMessage] = Field(min_length=1)
+    stream: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -146,8 +149,8 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/v1/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest) -> ChatResponse:
+@app.post("/v1/chat", response_model=None)
+async def chat(req: ChatRequest) -> ChatResponse | StreamingResponse:
     base_url = _get_env("LLM_BASE_URL")
     api_key = _get_env("LLM_API_KEY")
     model = _get_env("LLM_MODEL") or "qwen-plus"
@@ -181,24 +184,86 @@ async def chat(req: ChatRequest) -> ChatResponse:
                 messages.insert(insert_at, {"role": "system", "content": _build_graphrag_system_message(context)})
 
     if not base_url or not api_key:
-        return ChatResponse(
-            reply=(
-                "AI 服务已启动，但未配置上游大模型。"
-                "请设置环境变量 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 后重试。"
-            ),
-            model=None,
+        error_msg = (
+            "AI 服务已启动，但未配置上游大模型。"
+            "请设置环境变量 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL 后重试。"
         )
+        if req.stream:
+            async def error_gen() -> AsyncIterator[str]:
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
+            return StreamingResponse(error_gen(), media_type="text/event-stream")
+        return ChatResponse(reply=error_msg, model=None)
 
     url = base_url.rstrip("/") + "/v1/chat/completions"
     payload: dict[str, Any] = {
         "model": model,
         "messages": messages,
         "temperature": 0.2,
+        "stream": req.stream,
     }
     headers = {"Authorization": f"Bearer {api_key}"}
 
+    # Streaming mode
+    if req.stream:
+        async def stream_generator() -> AsyncIterator[str]:
+            # Send initial event to prevent gateway timeout
+            yield f"data: {json.dumps({'type': 'start', 'model': model})}\n\n"
+            try:
+                # Use no read timeout for streaming (only connect timeout)
+                timeout = httpx.Timeout(timeout=None, connect=30.0)
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    async with client.stream("POST", url, json=payload, headers=headers) as resp:
+                        if resp.status_code >= 300:
+                            yield f"data: {json.dumps({'error': f'upstream error: {resp.status_code}'})}\n\n"
+                            return
+                        # Parse OpenAI-compatible SSE or Ollama NDJSON
+                        async for line in resp.aiter_lines():
+                            line = line.strip()
+                            if not line:
+                                continue
+                            # OpenAI SSE format: "data: {...}"
+                            if line.startswith("data: "):
+                                data_str = line[6:]
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    data = json.loads(data_str)
+                                    delta = data.get("choices", [{}])[0].get("delta", {})
+                                    content = delta.get("content", "")
+                                    if content:
+                                        yield f"data: {json.dumps({'content': content})}\n\n"
+                                except json.JSONDecodeError:
+                                    pass
+                            # Ollama NDJSON format: plain JSON per line
+                            else:
+                                try:
+                                    data = json.loads(line)
+                                    content = data.get("message", {}).get("content", "")
+                                    if content:
+                                        yield f"data: {json.dumps({'content': content})}\n\n"
+                                    if data.get("done"):
+                                        break
+                                except json.JSONDecodeError:
+                                    pass
+            except httpx.HTTPError as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            finally:
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+        return StreamingResponse(
+            stream_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    # Non-streaming mode (original logic)
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        timeout = httpx.Timeout(timeout=300.0, connect=30.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.post(url, json=payload, headers=headers)
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"upstream request failed: {e}") from e
@@ -213,3 +278,4 @@ async def chat(req: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=502, detail=f"invalid upstream response: {e}") from e
 
     return ChatResponse(reply=str(content).strip(), model=model)
+

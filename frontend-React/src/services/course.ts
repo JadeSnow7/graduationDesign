@@ -25,14 +25,28 @@ const MOCK_COURSES: Course[] = [
     },
 ];
 
+// Backend response format
+interface BackendCourse {
+    ID: number;
+    name: string;
+    description?: string;
+    teacher_id: number;
+}
+
 export const courseService = {
     async list(): Promise<Course[]> {
         if (MOCK_MODE) {
             return MOCK_COURSES;
         }
 
-        const response = await apiClient.get<Course[]>('/courses');
-        return response.data;
+        const response = await apiClient.get<BackendCourse[]>('/courses');
+        // Map backend format to frontend format
+        return response.data.map((c) => ({
+            id: String(c.ID),
+            name: c.name,
+            description: c.description || '暂无描述',
+            instructor: `教师 ID: ${c.teacher_id}`,
+        }));
     },
 
     async getById(id: string): Promise<Course | undefined> {

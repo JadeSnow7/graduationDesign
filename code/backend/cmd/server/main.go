@@ -36,7 +36,25 @@ func main() {
 	aiClient := clients.NewAIClient(cfg.AIBaseURL)
 	simClient := clients.NewSimClient(cfg.SimBaseURL)
 
-	router := httpapi.NewRouter(cfg, gormDB, aiClient, simClient)
+	// Initialize MinIO client
+	signedURLExpiry, err := time.ParseDuration(cfg.MinioSignedURLExpiry)
+	if err != nil {
+		signedURLExpiry = 7 * 24 * time.Hour // default 7 days
+	}
+	minioClient, err := clients.NewMinioClient(clients.MinioConfig{
+		Endpoint:        cfg.MinioEndpoint,
+		AccessKey:       cfg.MinioAccessKey,
+		SecretKey:       cfg.MinioSecretKey,
+		BucketName:      cfg.MinioBucket,
+		UseSSL:          cfg.MinioUseSSL,
+		SignedURLExpiry: signedURLExpiry,
+	})
+	if err != nil {
+		log.Printf("Warning: MinIO client initialization failed: %v (file upload will be disabled)", err)
+		minioClient = nil
+	}
+
+	router := httpapi.NewRouter(cfg, gormDB, aiClient, simClient, minioClient)
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,

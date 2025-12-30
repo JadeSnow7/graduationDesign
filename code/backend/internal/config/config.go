@@ -19,6 +19,14 @@ type Config struct {
 	WecomCorpID  string
 	WecomAgentID string
 	WecomSecret  string
+
+	// MinIO configuration
+	MinioEndpoint        string
+	MinioAccessKey       string
+	MinioSecretKey       string
+	MinioBucket          string
+	MinioUseSSL          bool
+	MinioSignedURLExpiry string
 }
 
 func Load() Config {
@@ -41,16 +49,25 @@ func Load() Config {
 	wecomAgentID := getenv("WECOM_AGENTID", "")
 	wecomSecret := getenv("WECOM_SECRET", "")
 
+	// MinIO config
+	minioUseSSL := getenv("MINIO_USE_SSL", "false") == "true"
+
 	return Config{
-		HTTPAddr:     httpAddr,
-		JWTSecret:    jwtSecret,
-		CorsOrigins:  corsOrigins,
-		DBDsn:        dbDsn,
-		AIBaseURL:    aiBaseURL,
-		SimBaseURL:   simBaseURL,
-		WecomCorpID:  wecomCorpID,
-		WecomAgentID: wecomAgentID,
-		WecomSecret:  wecomSecret,
+		HTTPAddr:             httpAddr,
+		JWTSecret:            jwtSecret,
+		CorsOrigins:          corsOrigins,
+		DBDsn:                dbDsn,
+		AIBaseURL:            aiBaseURL,
+		SimBaseURL:           simBaseURL,
+		WecomCorpID:          wecomCorpID,
+		WecomAgentID:         wecomAgentID,
+		WecomSecret:          wecomSecret,
+		MinioEndpoint:        getenv("MINIO_ENDPOINT", "localhost:9000"),
+		MinioAccessKey:       getenv("MINIO_ACCESS_KEY", "minioadmin"),
+		MinioSecretKey:       getenv("MINIO_SECRET_KEY", "minioadmin123"),
+		MinioBucket:          getenv("MINIO_BUCKET", "emfield-uploads"),
+		MinioUseSSL:          minioUseSSL,
+		MinioSignedURLExpiry: getenv("MINIO_SIGNED_URL_EXPIRY", "168h"),
 	}
 }
 

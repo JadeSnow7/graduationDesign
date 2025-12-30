@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, simClient *clients.SimClient) *gin.Engine {
+func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, simClient *clients.SimClient, minioClient *clients.MinioClient) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 	r.Use(newCORS(cfg.CorsOrigins))
@@ -27,6 +27,11 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 	hCourse := newCourseHandlers(gormDB)
 	hAI := newAIHandlers(aiClient)
 	hSim := newSimHandlers(simClient)
+	hAssignment := newAssignmentHandlers(gormDB, aiClient)
+	hResource := newResourceHandlers(gormDB)
+	hUpload := newUploadHandlers(gormDB, minioClient)
+	hQuiz := newQuizHandlers(gormDB)
+	hUser := newUserHandlers(gormDB)
 
 	// WeChat Work client (optional)
 	wecomClient := clients.NewWecomClient(clients.WecomConfig{
@@ -40,6 +45,9 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 	{
 		api.POST("/auth/login", hAuth.Login)
 		api.GET("/auth/me", middleware.AuthRequired(cfg.JWTSecret), hAuth.Me)
+
+		// User stats route
+		api.GET("/user/stats", middleware.AuthRequired(cfg.JWTSecret), middleware.RequirePermission(authz.PermUserStats), hUser.GetStats)
 
 		// WeChat Work OAuth routes (no auth required)
 		api.POST("/auth/wecom", hWecom.Login)
@@ -59,11 +67,171 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 			hCourse.Create,
 		)
 
+		// Assignment routes
+		api.GET(
+			"/courses/:courseId/assignments",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentRead),
+			hAssignment.ListAssignments,
+		)
+		api.POST(
+			"/assignments",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentWrite),
+			hAssignment.CreateAssignment,
+		)
+		api.GET(
+			"/assignments/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentRead),
+			hAssignment.GetAssignment,
+		)
+		api.POST(
+			"/assignments/:id/submit",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentSubmit),
+			hAssignment.SubmitAssignment,
+		)
+		api.GET(
+			"/assignments/:id/submissions",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentGrade),
+			hAssignment.ListSubmissions,
+		)
+		api.POST(
+			"/submissions/:submissionId/grade",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentGrade),
+			hAssignment.GradeSubmission,
+		)
+
+		// Resource routes
+		api.GET(
+			"/courses/:courseId/resources",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermResourceRead),
+			hResource.ListResources,
+		)
+		api.POST(
+			"/resources",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermResourceWrite),
+			hResource.CreateResource,
+		)
+		api.DELETE(
+			"/resources/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermResourceWrite),
+			hResource.DeleteResource,
+		)
+
+		// Upload routes (file handling)
+		api.POST(
+			"/upload/assignment/:assignmentId",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentSubmit),
+			hUpload.UploadAssignmentFile,
+		)
+		api.POST(
+			"/upload/resource/:courseId",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermResourceWrite),
+			hUpload.UploadResourceFile,
+		)
+
+		// AI grading route
+		api.POST(
+			"/submissions/:submissionId/ai-grade",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentGrade),
+			hAssignment.AIGradeSubmission,
+		)
+
 		api.POST(
 			"/ai/chat",
 			middleware.AuthRequired(cfg.JWTSecret),
 			middleware.RequirePermission(authz.PermAIUse),
 			hAI.Chat,
+		)
+
+		// Quiz routes
+		api.GET(
+			"/courses/:courseId/quizzes",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizRead),
+			hQuiz.ListQuizzes,
+		)
+		api.POST(
+			"/quizzes",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.CreateQuiz,
+		)
+		api.GET(
+			"/quizzes/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizRead),
+			hQuiz.GetQuiz,
+		)
+		api.PUT(
+			"/quizzes/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.UpdateQuiz,
+		)
+		api.DELETE(
+			"/quizzes/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.DeleteQuiz,
+		)
+		api.POST(
+			"/quizzes/:id/publish",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.PublishQuiz,
+		)
+		api.POST(
+			"/quizzes/:id/unpublish",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.UnpublishQuiz,
+		)
+		api.POST(
+			"/quizzes/:id/questions",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.AddQuestion,
+		)
+		api.PUT(
+			"/questions/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.UpdateQuestion,
+		)
+		api.DELETE(
+			"/questions/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizWrite),
+			hQuiz.DeleteQuestion,
+		)
+		api.POST(
+			"/quizzes/:id/start",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizTake),
+			hQuiz.StartQuiz,
+		)
+		api.POST(
+			"/quizzes/:id/submit",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizTake),
+			hQuiz.SubmitQuiz,
+		)
+		api.GET(
+			"/quizzes/:id/result",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermQuizRead),
+			hQuiz.GetQuizResult,
 		)
 
 		// Simulation endpoints (require sim:use permission)
@@ -93,6 +261,14 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 		api.POST("/calc/differentiate", append(simMW, hSim.CalcProxy("/v1/calc/differentiate"))...)
 		api.POST("/calc/evaluate", append(simMW, hSim.CalcProxy("/v1/calc/evaluate"))...)
 		api.POST("/calc/vector_op", append(simMW, hSim.CalcProxy("/v1/calc/vector_op"))...)
+
+		// Code execution endpoint (sandboxed)
+		api.POST(
+			"/sim/run_code",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCodeRun),
+			hSim.SimProxy("/v1/sim/run_code"),
+		)
 	}
 
 	return r

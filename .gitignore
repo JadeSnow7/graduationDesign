@@ -11,7 +11,7 @@ Thumbs.db
 Icon?
 
 # Environment Variables
-.env
+# .env
 .env.*
 !.env.example
 
@@ -129,7 +129,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
@@ -211,7 +211,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+# .env
 .venv
 env/
 venv/

@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
-import { authService, type User } from '@/services/auth';
-import { getToken } from '@/services/api/getAuthHeaders';
+import { authApi } from '@/api/auth';
+import { authStore, type User } from '@/lib/auth-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -24,7 +24,7 @@ type AuthAction =
     | { type: 'LOGOUT' };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reducer (Pure function, testable)
+// Reducer
 // ─────────────────────────────────────────────────────────────────────────────
 
 const initialState: AuthState = {
@@ -58,7 +58,7 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hook
+// Hook & Context
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface AuthContextValue {
@@ -77,13 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Bootstrap: restore session on mount
     useEffect(() => {
-        const token = getToken();
+        // Check if we have a token in store
+        const token = authStore.getToken();
+
         if (token && state.status === 'idle') {
             dispatch({ type: 'RESTORE_START' });
-            authService
-                .me()
+            // Verify with backend
+            authApi.me()
                 .then((user) => dispatch({ type: 'RESTORE_SUCCESS', user }))
-                .catch(() => dispatch({ type: 'RESTORE_FAIL' }));
+                .catch(() => {
+                    // Token invalid or expired
+                    authStore.clearToken();
+                    dispatch({ type: 'RESTORE_FAIL' });
+                });
         } else if (!token && state.status === 'idle') {
             dispatch({ type: 'RESTORE_FAIL' });
         }
@@ -92,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const login = useCallback(async (username: string, password: string) => {
         dispatch({ type: 'LOGIN_START' });
         try {
-            const { user } = await authService.login(username, password);
+            const user = await authApi.login(username, password);
             dispatch({ type: 'LOGIN_SUCCESS', user });
         } catch (error) {
             dispatch({
@@ -104,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const logout = useCallback(() => {
-        authService.logout();
+        authApi.logout();
         dispatch({ type: 'LOGOUT' });
     }, []);
 

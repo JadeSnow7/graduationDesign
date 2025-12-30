@@ -32,5 +32,11 @@ func AutoMigrate(gormDB *gorm.DB) error {
 	return gormDB.AutoMigrate(
 		&models.User{},
 		&models.Course{},
+		&models.Assignment{},
+		&models.Submission{},
+		&models.Resource{},
+		&models.Quiz{},
+		&models.Question{},
+		&models.QuizAttempt{},
 	)
 }

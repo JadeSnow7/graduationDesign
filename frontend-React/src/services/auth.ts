@@ -30,12 +30,25 @@ export const authService = {
             return { token, user: MOCK_USER };
         }
 
-        const response = await apiClient.post<LoginResponse>('/auth/login', {
+        // Backend returns: { access_token, token_type, expires_in }
+        const response = await apiClient.post<{ access_token: string; token_type: string; expires_in: number }>('/auth/login', {
             username,
             password,
         });
-        setToken(response.data.token);
-        return response.data;
+
+        const token = response.data.access_token;
+        setToken(token);
+
+        // Decode JWT to get user info (payload is base64 encoded)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const user: User = {
+            id: String(payload.uid),
+            name: payload.username,
+            role: payload.role as User['role'],
+            permissions: ['ai:use', 'sim:use', 'course:read'], // Default permissions
+        };
+
+        return { token, user };
     },
 
     async me(): Promise<User> {

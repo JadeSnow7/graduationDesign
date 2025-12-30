@@ -9,10 +9,10 @@ export function OverviewPage() {
             {/* Hero */}
             <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 border border-blue-500/20">
                 <h1 className="text-3xl font-bold text-white mb-2">{course?.name}</h1>
-                <p className="text-gray-300">{course?.description}</p>
+                <p className="text-gray-300">暂无描述</p>
                 <div className="flex items-center gap-2 mt-4 text-gray-400">
                     <Users className="w-4 h-4" />
-                    <span>授课教师: {course?.instructor}</span>
+                    <span>授课教师ID: {course?.teacher_id}</span>
                 </div>
             </div>
 

@@ -1,5 +1,6 @@
 import { useReducer, useCallback, useRef, useEffect } from 'react';
-import { streamChat, type ChatMessage, type ChatPayload } from '@/services/ai';
+import { aiStreamClient } from '@/lib/ai-stream';
+import type { ChatMessage } from '@/api/ai';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -86,7 +87,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface UseChatOptions {
-    mode?: ChatPayload['mode'];
+    mode?: string; // Assuming ChatPayload['mode'] was a string, or define a new type if needed
     rag?: boolean;
 }
 
@@ -108,15 +109,21 @@ export function useChat(options: UseChatOptions = {}) {
             abortControllerRef.current?.abort();
             abortControllerRef.current = new AbortController();
 
-            const payload: ChatPayload = {
-                messages: [...state.messages, { role: 'user', content: prompt }],
-                mode: options.mode,
-                rag: options.rag,
-            };
+            // Build effective mode (append _rag if rag option is true)
+            let effectiveMode = options.mode || 'tutor';
+            if (options.rag) {
+                effectiveMode = `${effectiveMode}_rag`;
+            }
 
-            await streamChat(payload, {
+            // Filter out empty messages (e.g., assistant placeholders)
+            const filteredMessages = state.messages.filter((m) => m.content.trim() !== '');
+
+            const messages = [...filteredMessages, { role: 'user', content: prompt }];
+
+            await aiStreamClient.streamChat(messages, {
+                mode: effectiveMode,
                 signal: abortControllerRef.current.signal,
-                onToken: (token) => dispatch({ type: 'APPEND_TOKEN', token }),
+                onMessage: (token) => dispatch({ type: 'APPEND_TOKEN', token }),
                 onFinish: () => dispatch({ type: 'FINISH' }),
                 onError: (error) => dispatch({ type: 'FAIL', error: error.message }),
             });

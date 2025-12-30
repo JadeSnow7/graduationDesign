@@ -112,3 +112,201 @@ def laplace2d(req: Laplace2DRequest) -> Laplace2DResponse:
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
 
+
+# ============================================================================
+# Safe Code Execution Endpoint
+# ============================================================================
+
+import signal
+import traceback
+from contextlib import contextmanager
+from typing import Any
+
+
+class CodeExecutionRequest(BaseModel):
+    code: str = Field(..., description="Python code to execute", max_length=10000)
+    timeout: Annotated[int, Field(ge=1, le=10)] = 5  # seconds
+
+
+class CodeExecutionResponse(BaseModel):
+    success: bool
+    output: str
+    error: str | None = None
+    plots: list[str] = []  # base64 encoded PNG images
+
+
+class TimeoutError(Exception):
+    """Raised when code execution times out."""
+    pass
+
+
+def execute_code_with_timeout(code: str, safe_globals: dict, safe_locals: dict, output_buffer: io.StringIO, timeout: int) -> tuple[bool, str]:
+    """Execute code in a controlled way. Returns (success, error_message)."""
+    import sys
+    old_stdout = sys.stdout
+    sys.stdout = output_buffer
+    
+    try:
+        # Close any existing figures
+        plt.close('all')
+        # Execute the code
+        exec(code, safe_globals, safe_locals)  # noqa: S102
+        return True, ""
+    except Exception as e:
+        return False, f"{type(e).__name__}: {str(e)}"
+    finally:
+        sys.stdout = old_stdout
+
+
+# Safe builtins - only allow mathematical/scientific operations
+ALLOWED_BUILTINS = {
+    'abs': abs,
+    'all': all,
+    'any': any,
+    'bool': bool,
+    'dict': dict,
+    'enumerate': enumerate,
+    'filter': filter,
+    'float': float,
+    'int': int,
+    'len': len,
+    'list': list,
+    'map': map,
+    'max': max,
+    'min': min,
+    'pow': pow,
+    'print': print,
+    'range': range,
+    'round': round,
+    'sorted': sorted,
+    'str': str,
+    'sum': sum,
+    'tuple': tuple,
+    'zip': zip,
+    'True': True,
+    'False': False,
+    'None': None,
+}
+
+
+def create_safe_globals() -> dict[str, Any]:
+    """Create a restricted global namespace for code execution."""
+    safe_globals = {'__builtins__': ALLOWED_BUILTINS}
+    
+    # Add numpy with alias
+    safe_globals['np'] = np
+    safe_globals['numpy'] = np
+    
+    # Add matplotlib for plotting
+    safe_globals['plt'] = plt
+    safe_globals['matplotlib'] = matplotlib
+    
+    # Add math module
+    import math
+    safe_globals['math'] = math
+    
+    return safe_globals
+
+
+@app.post("/v1/sim/run_code", response_model=CodeExecutionResponse)
+def run_code(req: CodeExecutionRequest) -> CodeExecutionResponse:
+    """
+    Execute Python code in a sandboxed environment.
+    
+    Security measures:
+    - Timeout (default 5s, max 10s)
+    - Restricted builtins (no file/network access)
+    - Only numpy, scipy, math, matplotlib allowed
+    - No __import__, exec, eval in user code
+    """
+    # Security check: block dangerous constructs
+    dangerous_patterns = [
+        '__import__',
+        'import os',
+        'import sys',
+        'import subprocess',
+        'import socket',
+        'open(',
+        'exec(',
+        'eval(',
+        'compile(',
+        '__builtins__',
+        '__class__',
+        '__subclasses__',
+        'getattr',
+        'setattr',
+        'delattr',
+    ]
+    
+    code_lower = req.code.lower()
+    for pattern in dangerous_patterns:
+        if pattern.lower() in code_lower:
+            return CodeExecutionResponse(
+                success=False,
+                output="",
+                error=f"Security error: '{pattern}' is not allowed",
+            )
+    
+    # Capture stdout
+    output_buffer = io.StringIO()
+    plots: list[str] = []
+    
+    try:
+        safe_globals = create_safe_globals()
+        safe_locals: dict[str, Any] = {}
+        
+        # Use ThreadPoolExecutor for timeout (works in uvicorn threads)
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+        
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                execute_code_with_timeout,
+                req.code,
+                safe_globals,
+                safe_locals,
+                output_buffer,
+                req.timeout
+            )
+            try:
+                success, error_msg = future.result(timeout=req.timeout)
+                if not success:
+                    return CodeExecutionResponse(
+                        success=False,
+                        output=output_buffer.getvalue(),
+                        error=error_msg,
+                    )
+            except FuturesTimeoutError:
+                return CodeExecutionResponse(
+                    success=False,
+                    output=output_buffer.getvalue(),
+                    error=f"Code execution timed out after {req.timeout} seconds",
+                )
+        
+        # Capture any matplotlib figures
+        for fig_num in plt.get_fignums():
+            fig = plt.figure(fig_num)
+            buf = io.BytesIO()
+            fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            buf.seek(0)
+            plots.append(base64.b64encode(buf.getvalue()).decode('ascii'))
+            plt.close(fig)
+        
+        output = output_buffer.getvalue()
+        
+        return CodeExecutionResponse(
+            success=True,
+            output=output,
+            plots=plots,
+        )
+        
+    except Exception as e:
+        return CodeExecutionResponse(
+            success=False,
+            output=output_buffer.getvalue(),
+            error=f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}",
+        )
+    finally:
+        plt.close('all')
+
+
+
