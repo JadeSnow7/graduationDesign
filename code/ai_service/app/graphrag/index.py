@@ -12,6 +12,7 @@ class Chunk:
     text: str
     source: str | None = None
     section: str | None = None
+    metadata: dict[str, Any] | None = None  # For ACL: course_id, user_id, doc_type
 
 
 @dataclass(frozen=True)
@@ -71,11 +72,16 @@ class GraphRAGIndex:
                 continue
             source = ch.get("source")
             section = ch.get("section")
+            # Extract metadata for ACL filtering
+            metadata = ch.get("metadata")
+            if metadata is not None and not isinstance(metadata, dict):
+                metadata = None
             chunks[chunk_id] = Chunk(
                 id=chunk_id,
                 text=text,
                 source=str(source).strip() if source else None,
                 section=str(section).strip() if section else None,
+                metadata=metadata,
             )
 
         edges: list[Edge] = []
