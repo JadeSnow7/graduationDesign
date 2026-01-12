@@ -207,7 +207,7 @@ async def _call_integrate(args: dict) -> ToolResult:
     if args.get("upper_bound") is not None:
         payload["upper"] = args["upper_bound"]
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, proxy=None) as client:
         resp = await client.post(f"{SIM_SERVICE_URL}/v1/calc/integrate", json=payload)
         if resp.status_code == 200:
             data = resp.json()
@@ -224,7 +224,7 @@ async def _call_differentiate(args: dict) -> ToolResult:
         "order": args.get("order", 1),
     }
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, proxy=None) as client:
         resp = await client.post(f"{SIM_SERVICE_URL}/v1/calc/differentiate", json=payload)
         if resp.status_code == 200:
             data = resp.json()
@@ -240,7 +240,7 @@ async def _call_evaluate(args: dict) -> ToolResult:
         "variables": args.get("variables", {}),
     }
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, proxy=None) as client:
         resp = await client.post(f"{SIM_SERVICE_URL}/v1/calc/evaluate", json=payload)
         if resp.status_code == 200:
             data = resp.json()
@@ -259,7 +259,7 @@ async def _call_vector_op(args: dict) -> ToolResult:
         "fz": args.get("fz", "0"),
     }
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, proxy=None) as client:
         resp = await client.post(f"{SIM_SERVICE_URL}/v1/calc/vector_op", json=payload)
         if resp.status_code == 200:
             data = resp.json()
@@ -285,7 +285,7 @@ async def _call_simulation(args: dict) -> ToolResult:
     if not endpoint:
         return ToolResult(success=False, error=f"Unknown simulation type: {sim_type}")
     
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with httpx.AsyncClient(timeout=60.0, proxy=None) as client:
         resp = await client.post(f"{SIM_SERVICE_URL}{endpoint}", json=params)
         if resp.status_code == 200:
             data = resp.json()

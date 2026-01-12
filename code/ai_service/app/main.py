@@ -294,7 +294,7 @@ async def chat(req: ChatRequest) -> ChatResponse | StreamingResponse:
             try:
                 # Use no read timeout for streaming (only connect timeout)
                 timeout = httpx.Timeout(timeout=None, connect=30.0)
-                async with httpx.AsyncClient(timeout=timeout) as client:
+                async with httpx.AsyncClient(timeout=timeout, proxy=None) as client:
                     async with client.stream("POST", url, json=payload, headers=headers) as resp:
                         if resp.status_code >= 300:
                             yield f"data: {json.dumps({'error': f'upstream error: {resp.status_code}'})}\n\n"
@@ -365,7 +365,7 @@ async def chat(req: ChatRequest) -> ChatResponse | StreamingResponse:
     # Non-streaming mode (original logic)
     try:
         timeout = httpx.Timeout(timeout=300.0, connect=30.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, proxy=None) as client:
             resp = await client.post(url, json=payload, headers=headers)
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"upstream request failed: {e}") from e
@@ -502,7 +502,7 @@ async def chat_with_tools(req: ChatWithToolsRequest) -> ChatWithToolsResponse:
     for _ in range(max_calls + 1):
         try:
             timeout = httpx.Timeout(timeout=120.0, connect=30.0)
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            async with httpx.AsyncClient(timeout=timeout, proxy=None) as client:
                 resp = await client.post(url, json=payload, headers=headers)
         except httpx.HTTPError as e:
             return ChatWithToolsResponse(
@@ -802,7 +802,7 @@ async def chat_hybrid(req: HybridChatRequest, request: Request) -> ChatResponse 
             yield f"data: {json.dumps({'type': 'start', 'model': model})}\n\n"
             try:
                 timeout = httpx.Timeout(timeout=None, connect=30.0)
-                async with httpx.AsyncClient(timeout=timeout) as client:
+                async with httpx.AsyncClient(timeout=timeout, proxy=None) as client:
                     async with client.stream("POST", url, json=payload, headers=headers) as resp:
                         if resp.status_code >= 300:
                             yield f"data: {json.dumps({'error': f'upstream error: {resp.status_code}'})}\n\n"
@@ -837,7 +837,7 @@ async def chat_hybrid(req: HybridChatRequest, request: Request) -> ChatResponse 
     # Non-streaming
     try:
         timeout = httpx.Timeout(timeout=300.0, connect=30.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, proxy=None) as client:
             resp = await client.post(url, json=payload, headers=headers)
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"upstream request failed: {e}") from e
@@ -940,7 +940,8 @@ async def _call_llm_with_tools(
     
     for _ in range(max_tool_calls + 1):
         timeout = httpx.Timeout(timeout=120.0, connect=30.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        # Disable proxy for localhost (Ollama) to avoid SOCKS proxy issues
+        async with httpx.AsyncClient(timeout=timeout, proxy=None) as client:
             resp = await client.post(url, json=payload, headers=headers)
         
         if resp.status_code >= 300:
