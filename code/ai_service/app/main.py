@@ -5,6 +5,10 @@ import os
 from functools import lru_cache
 from typing import Any, AsyncIterator, Literal
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
