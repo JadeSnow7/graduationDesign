@@ -19,6 +19,7 @@ from app.skills.base import (
     GraderSkill,
 )
 from app.skills.guided_learning import GuidedLearningSkill
+from app.skills.coaching_strategy import CoachingStrategySkill
 
 
 # Skill instances
@@ -31,6 +32,7 @@ _SKILLS: dict[str, BaseSkill] = {
     "concept_tutor": ConceptTutorSkill(),
     "grader": GraderSkill(),
     "guided_learning": GuidedLearningSkill(),
+    "coaching_strategy": CoachingStrategySkill(),
 }
 
 # Aliases for backward compatibility with existing mode names
@@ -96,6 +98,7 @@ __all__ = [
     "ConceptTutorSkill",
     "GraderSkill",
     "GuidedLearningSkill",
+    "CoachingStrategySkill",
     "get_skill",
     "get_all_skills",
     "list_skill_ids",

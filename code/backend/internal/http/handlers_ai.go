@@ -1,11 +1,13 @@
 package http
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huaodong/emfield-teaching-platform/backend/internal/clients"
+	"github.com/huaodong/emfield-teaching-platform/backend/internal/middleware"
 )
 
 type aiHandlers struct {
@@ -83,4 +85,60 @@ func (h *aiHandlers) streamChat(c *gin.Context, req chatRequest) {
 			break
 		}
 	}
+}
+
+func (h *aiHandlers) ChatWithTools(c *gin.Context) {
+	var req clients.ChatWithToolsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	resp, err := h.ai.ChatWithTools(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+// guidedChatRequest is the request body for guided chat
+type guidedChatRequest struct {
+	SessionID string                `json:"session_id,omitempty"`
+	Topic     string                `json:"topic,omitempty"`
+	Messages  []clients.ChatMessage `json:"messages" binding:"required,min=1"`
+	CourseID  string                `json:"course_id,omitempty"`
+}
+
+// ChatGuided handles guided learning chat requests.
+// It injects the user_id from JWT context into the AI service request.
+func (h *aiHandlers) ChatGuided(c *gin.Context) {
+	var req guidedChatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Extract user from JWT context (set by AuthRequired middleware)
+	user, ok := middleware.GetUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found in context"})
+		return
+	}
+
+	// Build AI service request with injected user_id
+	aiReq := clients.GuidedChatRequest{
+		SessionID: req.SessionID,
+		Topic:     req.Topic,
+		Messages:  req.Messages,
+		UserID:    fmt.Sprintf("%d", user.ID),
+		CourseID:  req.CourseID,
+	}
+
+	resp, err := h.ai.ChatGuided(c.Request.Context(), aiReq)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }

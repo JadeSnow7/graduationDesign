@@ -57,13 +57,30 @@ func (h *courseHandlers) List(c *gin.Context) {
 	}
 
 	var courses []models.Course
-	q := h.db.Order("id desc")
-	if u.Role == "teacher" {
-		q = q.Where("teacher_id = ?", u.ID)
+
+	switch u.Role {
+	case "admin":
+		// Admin sees all courses
+		if err := h.db.Order("id desc").Find(&courses).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "list courses failed"})
+			return
+		}
+	case "teacher":
+		// Teacher sees courses they created
+		if err := h.db.Where("teacher_id = ?", u.ID).Order("id desc").Find(&courses).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "list courses failed"})
+			return
+		}
+	default:
+		// Student/Assistant: filter by enrollment
+		if err := h.db.Joins("JOIN course_enrollments ON course_enrollments.course_id = courses.id").
+			Where("course_enrollments.user_id = ? AND course_enrollments.deleted_at IS NULL", u.ID).
+			Order("courses.id desc").
+			Find(&courses).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "list courses failed"})
+			return
+		}
 	}
-	if err := q.Find(&courses).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "list courses failed"})
-		return
-	}
+
 	c.JSON(http.StatusOK, courses)
 }

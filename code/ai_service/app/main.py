@@ -857,6 +857,7 @@ async def chat_hybrid(req: HybridChatRequest, request: Request) -> ChatResponse 
 from app.session import LearningSession, LearningStep, SessionManager
 from app.skills.guided_learning import GuidedLearningSkill
 from app.graphrag.retrieve import build_rag_context_with_citations, Citation
+from app.weak_point_detector import detect_weak_points, get_weak_point_detector
 import re
 
 
@@ -1150,6 +1151,11 @@ async def chat_guided(req: GuidedChatRequest, request: Request) -> GuidedChatRes
     positive_indicators = ["正确", "很好", "太棒了", "完全正确", "进入下一步", "接下来"]
     if any(ind in reply for ind in positive_indicators):
         session.advance_step()
+    
+    # Detect weak points using NLP-based detector
+    detected_weak_points = detect_weak_points(reply)
+    for concept in detected_weak_points:
+        session.add_weak_point(concept)
     
     SessionManager.update(session)
     

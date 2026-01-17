@@ -32,6 +32,11 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 	hUpload := newUploadHandlers(gormDB, minioClient)
 	hQuiz := newQuizHandlers(gormDB)
 	hUser := newUserHandlers(gormDB)
+	hChapter := newChapterHandlers(gormDB)
+	hAnnouncement := newAnnouncementHandlers(gormDB)
+	hAttendance := newAttendanceHandlers(gormDB)
+	hLearningProfile := newLearningProfileHandlers(gormDB)
+	hAdmin := newAdminHandlers(gormDB)
 
 	// WeChat Work client (optional)
 	wecomClient := clients.NewWecomClient(clients.WecomConfig{
@@ -67,7 +72,63 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 			hCourse.Create,
 		)
 
+		// Chapter routes
+		api.GET(
+			"/courses/:courseId/chapters",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseRead),
+			hChapter.ListChapters,
+		)
+		api.POST(
+			"/chapters",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseWrite),
+			hChapter.CreateChapter,
+		)
+		api.GET(
+			"/chapters/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseRead),
+			hChapter.GetChapter,
+		)
+		api.PUT(
+			"/chapters/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseWrite),
+			hChapter.UpdateChapter,
+		)
+		api.DELETE(
+			"/chapters/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseWrite),
+			hChapter.DeleteChapter,
+		)
+		api.POST(
+			"/chapters/:id/heartbeat",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseRead),
+			hChapter.Heartbeat,
+		)
+		api.GET(
+			"/chapters/:id/my-stats",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseRead),
+			hChapter.GetMyStats,
+		)
+		api.GET(
+			"/chapters/:id/class-stats",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseWrite),
+			hChapter.GetClassStats,
+		)
+
 		// Assignment routes
+		api.GET(
+			"/courses/:courseId/assignments/stats",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentRead),
+			hAssignment.GetCourseAssignmentStats,
+		)
 		api.GET(
 			"/courses/:courseId/assignments",
 			middleware.AuthRequired(cfg.JWTSecret),
@@ -75,7 +136,7 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 			hAssignment.ListAssignments,
 		)
 		api.POST(
-			"/assignments",
+			"/courses/:courseId/assignments",
 			middleware.AuthRequired(cfg.JWTSecret),
 			middleware.RequirePermission(authz.PermAssignmentWrite),
 			hAssignment.CreateAssignment,
@@ -91,6 +152,12 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 			middleware.AuthRequired(cfg.JWTSecret),
 			middleware.RequirePermission(authz.PermAssignmentSubmit),
 			hAssignment.SubmitAssignment,
+		)
+		api.GET(
+			"/assignments/:id/my-submission",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAssignmentRead),
+			hAssignment.GetMySubmission,
 		)
 		api.GET(
 			"/assignments/:id/submissions",
@@ -152,6 +219,114 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 			middleware.AuthRequired(cfg.JWTSecret),
 			middleware.RequirePermission(authz.PermAIUse),
 			hAI.Chat,
+		)
+		api.POST(
+			"/ai/chat_with_tools",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAIUse),
+			hAI.ChatWithTools,
+		)
+		api.POST(
+			"/ai/chat/guided",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAIUse),
+			hAI.ChatGuided,
+		)
+
+		// Announcement routes
+		api.GET(
+			"/courses/:courseId/announcements/summary",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAnnouncementRead),
+			hAnnouncement.GetSummary,
+		)
+		api.GET(
+			"/courses/:courseId/announcements",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAnnouncementRead),
+			hAnnouncement.List,
+		)
+		api.POST(
+			"/courses/:courseId/announcements",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAnnouncementWrite),
+			hAnnouncement.Create,
+		)
+		api.PUT(
+			"/announcements/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAnnouncementWrite),
+			hAnnouncement.Update,
+		)
+		api.DELETE(
+			"/announcements/:id",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAnnouncementWrite),
+			hAnnouncement.Delete,
+		)
+		api.POST(
+			"/announcements/:id/read",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAnnouncementRead),
+			hAnnouncement.MarkRead,
+		)
+
+		// Attendance routes
+		api.GET(
+			"/courses/:courseId/attendance/summary",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAttendanceRead),
+			hAttendance.GetSummary,
+		)
+		api.GET(
+			"/courses/:courseId/attendance/sessions",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAttendanceRead),
+			hAttendance.ListSessions,
+		)
+		api.POST(
+			"/courses/:courseId/attendance/start",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAttendanceWrite),
+			hAttendance.StartSession,
+		)
+		api.POST(
+			"/attendance/:session_id/end",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAttendanceWrite),
+			hAttendance.EndSession,
+		)
+		api.POST(
+			"/attendance/:session_id/checkin",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAttendanceCheckin),
+			hAttendance.Checkin,
+		)
+		api.GET(
+			"/attendance/:session_id/records",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermAttendanceRead),
+			hAttendance.GetRecords,
+		)
+
+		// Learning Profile routes
+		api.GET(
+			"/learning-profiles/:courseId/:studentId",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseRead),
+			hLearningProfile.GetProfile,
+		)
+		api.POST(
+			"/learning-profiles",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseRead),
+			hLearningProfile.SaveProfile,
+		)
+		api.GET(
+			"/courses/:courseId/learning-profiles",
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermCourseWrite),
+			hLearningProfile.ListCourseProfiles,
 		)
 
 		// Quiz routes
@@ -269,6 +444,17 @@ func NewRouter(cfg config.Config, gormDB *gorm.DB, aiClient *clients.AIClient, s
 			middleware.RequirePermission(authz.PermCodeRun),
 			hSim.SimProxy("/v1/sim/run_code"),
 		)
+
+		// Admin routes (require user:manage permission)
+		adminMW := []gin.HandlerFunc{
+			middleware.AuthRequired(cfg.JWTSecret),
+			middleware.RequirePermission(authz.PermUserManage),
+		}
+		api.GET("/admin/stats", append(adminMW, hAdmin.GetSystemStats)...)
+		api.GET("/admin/users", append(adminMW, hAdmin.ListUsers)...)
+		api.POST("/admin/users", append(adminMW, hAdmin.CreateUser)...)
+		api.PUT("/admin/users/:id", append(adminMW, hAdmin.UpdateUser)...)
+		api.DELETE("/admin/users/:id", append(adminMW, hAdmin.DeleteUser)...)
 	}
 
 	return r

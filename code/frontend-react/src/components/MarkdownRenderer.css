@@ -1,0 +1,158 @@
+/* MarkdownRenderer Styles */
+
+.markdown-content {
+    line-height: 1.8;
+    color: #e2e8f0;
+}
+
+/* Headings */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.markdown-content h1 {
+    font-size: 1.5em;
+}
+
+.markdown-content h2 {
+    font-size: 1.3em;
+}
+
+.markdown-content h3 {
+    font-size: 1.15em;
+}
+
+.markdown-content h4 {
+    font-size: 1em;
+}
+
+/* Paragraphs */
+.markdown-content p {
+    margin-bottom: 1em;
+}
+
+/* Lists */
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+.markdown-content li {
+    margin-bottom: 0.25em;
+}
+
+.markdown-content li>p {
+    margin-bottom: 0.5em;
+}
+
+/* Inline code */
+.markdown-content .inline-code {
+    background: rgba(110, 118, 129, 0.4);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+    color: #f8fafc;
+}
+
+/* Links */
+.markdown-content .markdown-link {
+    color: #60a5fa;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.markdown-content .markdown-link:hover {
+    border-bottom-color: #60a5fa;
+}
+
+/* Blockquotes */
+.markdown-content blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1em;
+    margin: 1em 0;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* Tables */
+.markdown-content .table-wrapper {
+    overflow-x: auto;
+    margin: 1em 0;
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.markdown-content th,
+.markdown-content td {
+    padding: 0.75em 1em;
+    text-align: left;
+    border: 1px solid #374151;
+}
+
+.markdown-content th {
+    background: #1f2937;
+    font-weight: 600;
+}
+
+.markdown-content tr:nth-child(even) {
+    background: rgba(55, 65, 81, 0.3);
+}
+
+/* Horizontal rule */
+.markdown-content hr {
+    border: none;
+    border-top: 1px solid #374151;
+    margin: 2em 0;
+}
+
+/* LaTeX formulas - KaTeX styles */
+.markdown-content .katex-display {
+    margin: 1em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5em 0;
+}
+
+.markdown-content .katex {
+    font-size: 1.1em;
+}
+
+/* Strong and emphasis */
+.markdown-content strong {
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.markdown-content em {
+    font-style: italic;
+    color: #cbd5e1;
+}
+
+/* Images */
+.markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1em 0;
+}
+
+/* AI Response specific wrapper */
+.ai-response {
+    padding: 1em 0;
+}
+
+.ai-response .markdown-content {
+    font-size: 0.95rem;
+}

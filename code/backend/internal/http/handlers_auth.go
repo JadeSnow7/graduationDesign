@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/huaodong/emfield-teaching-platform/backend/internal/auth"
+	"github.com/huaodong/emfield-teaching-platform/backend/internal/authz"
 	"github.com/huaodong/emfield-teaching-platform/backend/internal/middleware"
 	"github.com/huaodong/emfield-teaching-platform/backend/internal/models"
 	"gorm.io/gorm"
@@ -62,6 +63,15 @@ func (h *authHandlers) Login(c *gin.Context) {
 	})
 }
 
+// MeResponse is the response for /auth/me endpoint
+type MeResponse struct {
+	ID          uint     `json:"id"`
+	Username    string   `json:"username"`
+	Name        string   `json:"name"`
+	Role        string   `json:"role"`
+	Permissions []string `json:"permissions"`
+}
+
 func (h *authHandlers) Me(c *gin.Context) {
 	u, ok := middleware.GetUser(c)
 	if !ok {
@@ -69,10 +79,21 @@ func (h *authHandlers) Me(c *gin.Context) {
 		return
 	}
 
+	// Fetch fresh user data from database
 	var dbUser models.User
 	if err := h.db.First(&dbUser, u.ID).Error; err != nil {
-		c.JSON(http.StatusOK, u)
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
-	c.JSON(http.StatusOK, dbUser)
+
+	// Get permissions from RBAC
+	permissions := authz.GetPermissions(dbUser.Role)
+
+	c.JSON(http.StatusOK, MeResponse{
+		ID:          dbUser.ID,
+		Username:    dbUser.Username,
+		Name:        dbUser.Name,
+		Role:        dbUser.Role,
+		Permissions: permissions,
+	})
 }

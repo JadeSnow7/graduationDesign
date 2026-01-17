@@ -118,3 +118,126 @@ func (c *AIClient) StreamChat(ctx context.Context, req ChatRequest) (io.ReadClos
 
 	return resp.Body, nil
 }
+
+type ToolCall struct {
+	Name      string                 `json:"name"`
+	Arguments map[string]interface{} `json:"arguments"`
+}
+
+type ToolResult struct {
+	Name    string      `json:"name"`
+	Success bool        `json:"success"`
+	Result  interface{} `json:"result,omitempty"`
+	Error   string      `json:"error,omitempty"`
+}
+
+type ChatWithToolsRequest struct {
+	Mode         string                 `json:"mode"`
+	Messages     []ChatMessage          `json:"messages"`
+	EnableTools  bool                   `json:"enable_tools"`
+	MaxToolCalls int                    `json:"max_tool_calls"`
+	Context      map[string]interface{} `json:"context,omitempty"`
+}
+
+type ChatWithToolsResponse struct {
+	Reply       string       `json:"reply"`
+	Model       string       `json:"model,omitempty"`
+	ToolCalls   []ToolCall   `json:"tool_calls"`
+	ToolResults []ToolResult `json:"tool_results"`
+}
+
+func (c *AIClient) ChatWithTools(ctx context.Context, req ChatWithToolsRequest) (ChatWithToolsResponse, error) {
+	if c.baseURL == "" {
+		return ChatWithToolsResponse{}, errors.New("AI base url is empty")
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return ChatWithToolsResponse{}, err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/v1/chat_with_tools", c.baseURL), bytes.NewReader(body))
+	if err != nil {
+		return ChatWithToolsResponse{}, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return ChatWithToolsResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 5<<20)) // 5MB limit for larger tool outputs
+	if err != nil {
+		return ChatWithToolsResponse{}, err
+	}
+	if resp.StatusCode >= 300 {
+		return ChatWithToolsResponse{}, fmt.Errorf("ai service error: status=%d body=%s", resp.StatusCode, string(b))
+	}
+
+	var out ChatWithToolsResponse
+	if err := json.Unmarshal(b, &out); err != nil {
+		return ChatWithToolsResponse{}, err
+	}
+	return out, nil
+}
+
+// GuidedChatRequest represents a request to the guided learning endpoint.
+type GuidedChatRequest struct {
+	SessionID string        `json:"session_id,omitempty"`
+	Topic     string        `json:"topic,omitempty"`
+	Messages  []ChatMessage `json:"messages"`
+	UserID    string        `json:"user_id"`
+	CourseID  string        `json:"course_id,omitempty"`
+}
+
+// GuidedChatResponse represents a response from the guided learning endpoint.
+type GuidedChatResponse struct {
+	Reply              string                   `json:"reply"`
+	SessionID          string                   `json:"session_id"`
+	CurrentStep        int                      `json:"current_step"`
+	TotalSteps         int                      `json:"total_steps"`
+	ProgressPercentage float64                  `json:"progress_percentage"`
+	WeakPoints         []string                 `json:"weak_points"`
+	Citations          []map[string]interface{} `json:"citations"`
+	ToolResults        []ToolResult             `json:"tool_results"`
+	Model              string                   `json:"model,omitempty"`
+	LearningPath       []map[string]interface{} `json:"learning_path"`
+}
+
+// ChatGuided sends a request to the guided learning endpoint.
+func (c *AIClient) ChatGuided(ctx context.Context, req GuidedChatRequest) (GuidedChatResponse, error) {
+	if c.baseURL == "" {
+		return GuidedChatResponse{}, errors.New("AI base url is empty")
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return GuidedChatResponse{}, err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/v1/chat/guided", c.baseURL), bytes.NewReader(body))
+	if err != nil {
+		return GuidedChatResponse{}, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return GuidedChatResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 5<<20)) // 5MB limit
+	if err != nil {
+		return GuidedChatResponse{}, err
+	}
+	if resp.StatusCode >= 300 {
+		return GuidedChatResponse{}, fmt.Errorf("ai service error: status=%d body=%s", resp.StatusCode, string(b))
+	}
+
+	var out GuidedChatResponse
+	if err := json.Unmarshal(b, &out); err != nil {
+		return GuidedChatResponse{}, err
+	}
+	return out, nil
+}

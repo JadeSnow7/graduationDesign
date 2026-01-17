@@ -19,6 +19,7 @@ class LearningStep:
     step: int
     title: str
     description: str
+    questions: list[str] = field(default_factory=list)
     prerequisite_concepts: list[str] = field(default_factory=list)
     requires_tool_verification: bool = False
     completed: bool = False
@@ -93,6 +94,7 @@ class LearningSession:
                     "step": s.step,
                     "title": s.title,
                     "description": s.description,
+                    "questions": s.questions,
                     "completed": s.completed,
                 }
                 for s in self.learning_path

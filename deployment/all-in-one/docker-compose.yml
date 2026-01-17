@@ -1,0 +1,100 @@
+# EMField Teaching Platform - All-in-One Deployment
+# Usage: docker-compose up -d
+
+x-common-env: &common-env
+  DB_DSN: ${DB_DSN}
+  JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+  CORS_ORIGINS: ${CORS_ORIGINS:-*}
+
+services:
+  # ===========================================================================
+  # Application (Backend + AI in one container)
+  # ===========================================================================
+  app:
+    build:
+      context: ../..
+      dockerfile: deployment/all-in-one/Dockerfile
+    image: emfield-platform:latest
+    container_name: emfield-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      # Note: AI service (8001) is NOT exposed - internal only
+    environment:
+      <<: *common-env
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_BASE_URL: http://127.0.0.1:8001
+      SIM_ENABLED: ${SIM_ENABLED:-true}
+      SIM_BASE_URL: http://127.0.0.1:8002
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-emfield-uploads}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - emfield-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/healthz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===========================================================================
+  # MySQL Database (Optional - can use external)
+  # ===========================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: emfield-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: emfield
+      MYSQL_USER: emfield
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-EmField2024Pass!}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - emfield-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===========================================================================
+  # MinIO Object Storage (Optional - can use external)
+  # ===========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: emfield-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - emfield-network
+
+networks:
+  emfield-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  minio_data:

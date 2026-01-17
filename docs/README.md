@@ -2,47 +2,60 @@
 
 本目录包含项目的所有技术文档，按功能分类组织。
 
+## 📋 核心文档入口
+
+> **一站式阅读**：下方主设计文档按大厂模板编写，包含完整的项目背景、目标、方案调研、架构设计和关键决策，建议**首先阅读此文档**。
+
+| 文档 | 描述 |
+|------|------|
+| ⭐ [project-design-document.md](./architecture/project-design-document.md) | **项目设计文档（主文档）**：背景 → 目标 → 需求 → 方案调研 → 架构设计 → 关键决策 → 性能 → 风险 → 验证 |
+| [requirements.md](./requirements.md) | 需求规格说明书（SRS）：详细功能与非功能需求 |
+| [frontend-api-architecture-interaction.md](./frontend-api-architecture-interaction.md) | 前端、API、架构交互综合速览 |
+
+---
+
 ## 文档分类
 
 ### 📐 [架构文档](./architecture/)
-- 系统架构设计
-- 组件关系图
-- 数据流设计
-- 技术选型说明
+- **[项目设计文档](./architecture/project-design-document.md)** ⭐ 主文档
+- [系统架构总览](./architecture/system-overview.md)
+- [组件设计](./architecture/component-design.md)
+- [前端分层架构](./architecture/react-layered-architecture.md)
 
 ### 🔌 [API 文档](./api/)
-- REST API 接口规范
-- 认证与权限说明
-- 请求/响应示例
-- 错误码定义
+- [认证接口](./api/authentication.md)
+- [课程管理接口](./api/course-management.md)
+- [AI 服务接口](./api/ai-services.md)
+- [仿真服务接口](./api/simulation-services.md)
 
 ### 🚀 [部署文档](./deployment/)
-- 环境搭建指南
-- Docker 部署配置
-- 生产环境部署
-- 监控与运维
+- [部署指南](./deployment/README.md)
+- [快速启动](./deployment/quick-start.md)
 
 ### 💻 [开发文档](./development/)
-- 开发环境配置
-- 代码规范
-- 调试指南
-- 贡献指南
+- [开发指南](./development/README.md)
+- [旧版开发笔记](./development/legacy-dev.md)
+
+---
 
 ## 快速导航
 
-| 文档类型 | 主要内容 | 适用人群 |
-|---------|---------|---------|
-| 架构文档 | 系统设计、技术架构 | 架构师、高级开发者 |
-| API 文档 | 接口规范、使用示例 | 前端开发者、集成开发者 |
-| 部署文档 | 环境配置、部署流程 | 运维工程师、DevOps |
-| 开发文档 | 开发规范、调试技巧 | 所有开发者 |
+| 我想了解... | 阅读文档 |
+|-------------|----------|
+| 项目整体设计思路和技术选型 | [项目设计文档](./architecture/project-design-document.md) ⭐ |
+| 系统如何部署运行 | [快速启动](./deployment/quick-start.md) |
+| 如何调用后端 API | [API 文档](./api/README.md) |
+| 前端代码结构 | [前端分层架构](./architecture/react-layered-architecture.md) |
+| 功能需求明细 | [需求规格说明](./requirements.md) |
 
-## 文档维护
+---
 
-- 所有文档应保持与代码同步更新
-- 重要变更需要更新相关文档
-- 定期检查文档链接的有效性
-- 遵循 Markdown 格式规范
+## 文档维护规范
+
+- ✅ 所有文档应保持与代码同步更新
+- ✅ 重要变更需要更新相关文档
+- ✅ 遵循 Markdown 格式规范
+- ✅ 主设计文档按大厂模板保持 3-5 页篇幅
 
 ## 相关资源
 

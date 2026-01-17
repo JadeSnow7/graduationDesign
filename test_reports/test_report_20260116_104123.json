@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-01-16T10:41:57+08:00",
+  "summary": {
+    "passed": 1,
+    "failed": 1,
+    "skipped": 3,
+    "pass_rate": "50.00%"
+  },
+  "steps": {
+    "step1_scope": "pass",
+    "step2_repo": "fail",
+    "step3_unit": "skip",
+    "step4_integration": "skip",
+    "step5_e2e": "skip",
+    "step6_performance": "skip"
+  },
+  "details": {
+    "backend_coverage": "N/A%",
+    "ai_coverage": "N/A%",
+    "avg_response_ms": "N/A"
+  },
+  "thresholds": {
+    "coverage": "60%",
+    "pass_rate": "95%"
+  }
+}

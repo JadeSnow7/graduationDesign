@@ -173,6 +173,31 @@ func (h *assignmentHandlers) SubmitAssignment(c *gin.Context) {
 	c.JSON(http.StatusCreated, submission)
 }
 
+// GetMySubmission returns the current user's submission for an assignment
+func (h *assignmentHandlers) GetMySubmission(c *gin.Context) {
+	idStr := c.Param("id")
+	assignmentID, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid assignment id"})
+		return
+	}
+
+	user, ok := middleware.GetUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	var submission models.Submission
+	if err := h.db.Where("assignment_id = ? AND student_id = ?", assignmentID, user.ID).First(&submission).Error; err != nil {
+		// Return null instead of error if no submission
+		c.JSON(http.StatusOK, nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, submission)
+}
+
 // --- Grading ---
 
 type gradeRequest struct {
@@ -321,4 +346,90 @@ func (h *assignmentHandlers) AIGradeSubmission(c *gin.Context) {
 		"suggestion":        aiResponse.Reply,
 		"recommended_grade": nil, // Let teacher decide based on AI suggestion
 	})
+}
+
+// --- Statistics ---
+
+type assignmentStats struct {
+	TotalAssignments int     `json:"total_assignments"`
+	PendingCount     int     `json:"pending_count"` // For student: assignments not submitted
+	SubmittedCount   int     `json:"submitted_count"`
+	AverageGrade     float64 `json:"average_grade"` // For student: their avg grade; For teacher: course avg
+}
+
+func (h *assignmentHandlers) GetCourseAssignmentStats(c *gin.Context) {
+	courseIDStr := c.Param("courseId")
+	courseID, err := strconv.ParseUint(courseIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid course id"})
+		return
+	}
+
+	user, ok := middleware.GetUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	var stats assignmentStats
+
+	// 1. Total assignments count
+	var totalAssignments int64
+	if err := h.db.Model(&models.Assignment{}).Where("course_id = ?", courseID).Count(&totalAssignments).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count assignments"})
+		return
+	}
+	stats.TotalAssignments = int(totalAssignments)
+
+	if user.Role == "student" {
+		// 2. Submitted count
+		var submittedCount int64
+		// Join submissions with assignments to filter by course_id
+		err := h.db.Table("submissions").
+			Joins("JOIN assignments ON submissions.assignment_id = assignments.id").
+			Where("assignments.course_id = ? AND submissions.student_id = ?", courseID, user.ID).
+			Count(&submittedCount).Error
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count submissions"})
+			return
+		}
+		stats.SubmittedCount = int(submittedCount)
+		stats.PendingCount = int(totalAssignments) - int(submittedCount)
+
+		// 3. Average grade
+		var avgGrade float64
+		err = h.db.Table("submissions").
+			Joins("JOIN assignments ON submissions.assignment_id = assignments.id").
+			Where("assignments.course_id = ? AND submissions.student_id = ? AND submissions.grade IS NOT NULL", courseID, user.ID).
+			Select("AVG(submissions.grade)").Row().Scan(&avgGrade)
+
+		if err == nil {
+			stats.AverageGrade = avgGrade
+		}
+	} else {
+		// For Teachers/Admins: Course-wide stats
+		// Pending grading count? Or just leave pending as 0 for now.
+		// Let's implement "Pending Grading" as PendingCount for teachers
+
+		var pendingGrading int64
+		err := h.db.Table("submissions").
+			Joins("JOIN assignments ON submissions.assignment_id = assignments.id").
+			Where("assignments.course_id = ? AND submissions.grade IS NULL", courseID).
+			Count(&pendingGrading).Error
+		if err == nil {
+			stats.PendingCount = int(pendingGrading)
+		}
+
+		// Course average
+		var avgGrade float64
+		err = h.db.Table("submissions").
+			Joins("JOIN assignments ON submissions.assignment_id = assignments.id").
+			Where("assignments.course_id = ? AND submissions.grade IS NOT NULL", courseID).
+			Select("AVG(submissions.grade)").Row().Scan(&avgGrade)
+		if err == nil {
+			stats.AverageGrade = avgGrade
+		}
+	}
+
+	c.JSON(http.StatusOK, stats)
 }

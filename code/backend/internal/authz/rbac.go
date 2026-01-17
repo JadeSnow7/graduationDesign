@@ -28,6 +28,19 @@ const (
 
 	// User stats permission
 	PermUserStats = "user:stats"
+
+	// User management permission (admin only)
+	PermUserManage = "user:manage"
+
+	// Announcement permissions
+	PermAnnouncementRead  = "announcement:read"
+	PermAnnouncementWrite = "announcement:write"
+
+	// Attendance permissions
+	PermAttendanceRead    = "attendance:read"
+	PermAttendanceWrite   = "attendance:write"   // start/end session (teacher)
+	PermAttendanceCheckin = "attendance:checkin" // student check-in
+	PermAttendanceExport  = "attendance:export"  // export records (teacher)
 )
 
 var rolePermissions = map[string]map[string]bool{
@@ -49,6 +62,12 @@ var rolePermissions = map[string]map[string]bool{
 		PermQuizWrite:       true,
 		PermQuizGrade:       true,
 		PermUserStats:       true,
+		// Announcement & Attendance
+		PermAnnouncementRead:  true,
+		PermAnnouncementWrite: true,
+		PermAttendanceRead:    true,
+		PermAttendanceWrite:   true,
+		PermAttendanceExport:  true,
 	},
 	"assistant": {
 		PermCourseRead:      true,
@@ -73,6 +92,10 @@ var rolePermissions = map[string]map[string]bool{
 		PermQuizRead:         true,
 		PermQuizTake:         true,
 		PermUserStats:        true,
+		// Announcement & Attendance
+		PermAnnouncementRead:  true,
+		PermAttendanceRead:    true,
+		PermAttendanceCheckin: true,
 	},
 }
 
@@ -85,4 +108,33 @@ func HasPermission(role string, perm string) bool {
 		return true
 	}
 	return perms[perm]
+}
+
+// GetPermissions returns all permissions for a given role
+func GetPermissions(role string) []string {
+	perms, ok := rolePermissions[role]
+	if !ok {
+		return []string{}
+	}
+
+	// Admin has all permissions
+	if perms["*"] {
+		return []string{
+			PermCourseRead, PermCourseWrite,
+			PermAIUse, PermSimUse,
+			PermAssignmentRead, PermAssignmentWrite, PermAssignmentSubmit, PermAssignmentGrade,
+			PermResourceRead, PermResourceWrite,
+			PermCodeRun,
+			PermQuizRead, PermQuizWrite, PermQuizTake, PermQuizGrade,
+			PermUserStats, PermUserManage,
+			PermAnnouncementRead, PermAnnouncementWrite,
+			PermAttendanceRead, PermAttendanceWrite, PermAttendanceCheckin, PermAttendanceExport,
+		}
+	}
+
+	result := make([]string, 0, len(perms))
+	for perm := range perms {
+		result = append(result, perm)
+	}
+	return result
 }

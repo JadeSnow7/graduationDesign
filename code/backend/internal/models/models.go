@@ -23,10 +23,20 @@ type Course struct {
 	TeacherID uint   `gorm:"index" json:"teacher_id"`
 }
 
+// CourseEnrollment represents a student's enrollment in a course
+type CourseEnrollment struct {
+	gorm.Model
+	CourseID   uint      `gorm:"not null;uniqueIndex:idx_course_user" json:"course_id"`
+	UserID     uint      `gorm:"not null;uniqueIndex:idx_course_user" json:"user_id"`
+	Role       string    `gorm:"size:32;default:'student'" json:"role"` // student, assistant
+	EnrolledAt time.Time `json:"enrolled_at"`
+}
+
 // Assignment represents a course assignment created by a teacher
 type Assignment struct {
 	gorm.Model
 	CourseID    uint       `gorm:"not null;index" json:"course_id"`
+	ChapterID   *uint      `gorm:"index" json:"chapter_id,omitempty"` // nullable, relates to chapter
 	TeacherID   uint       `gorm:"not null;index" json:"teacher_id"`
 	Title       string     `gorm:"size:256;not null" json:"title"`
 	Description string     `gorm:"type:text" json:"description"`
@@ -51,6 +61,7 @@ type Submission struct {
 type Resource struct {
 	gorm.Model
 	CourseID    uint   `gorm:"not null;index" json:"course_id"`
+	ChapterID   *uint  `gorm:"index" json:"chapter_id,omitempty"` // nullable, relates to chapter
 	CreatedByID uint   `gorm:"not null;index" json:"created_by_id"`
 	Title       string `gorm:"size:256;not null" json:"title"`
 	Type        string `gorm:"size:32;not null" json:"type"` // video, paper, link
@@ -58,10 +69,30 @@ type Resource struct {
 	Description string `gorm:"type:text" json:"description,omitempty"`
 }
 
+// Chapter represents a chapter within a course
+type Chapter struct {
+	gorm.Model
+	CourseID        uint   `gorm:"not null;index" json:"course_id"`
+	Title           string `gorm:"size:256;not null" json:"title"`
+	OrderNum        int    `gorm:"index" json:"order_num"`                      // sort by (order_num, id)
+	Summary         string `gorm:"type:text" json:"summary,omitempty"`          // chapter summary
+	KnowledgePoints string `gorm:"type:text" json:"knowledge_points,omitempty"` // JSON array: ["知识点1", "知识点2"]
+}
+
+// ChapterProgress tracks student's study time in a chapter
+type ChapterProgress struct {
+	gorm.Model
+	ChapterID            uint       `gorm:"not null;uniqueIndex:idx_chapter_student" json:"chapter_id"`
+	StudentID            uint       `gorm:"not null;uniqueIndex:idx_chapter_student" json:"student_id"`
+	StudyDurationSeconds int        `gorm:"default:0" json:"study_duration_seconds"`
+	LastActiveAt         *time.Time `json:"last_active_at,omitempty"`
+}
+
 // Quiz represents an online quiz/test for a course
 type Quiz struct {
 	gorm.Model
 	CourseID           uint       `gorm:"not null;index" json:"course_id"`
+	ChapterID          *uint      `gorm:"index" json:"chapter_id,omitempty"` // nullable, relates to chapter
 	CreatedByID        uint       `gorm:"not null;index" json:"created_by_id"`
 	Title              string     `gorm:"size:256;not null" json:"title"`
 	Description        string     `gorm:"type:text" json:"description"`
@@ -100,4 +131,55 @@ type QuizAttempt struct {
 	Answers        string     `gorm:"type:text" json:"answers,omitempty"` // JSON: {"1": "A", "2": ["A","C"], ...}
 	Score          *int       `json:"score,omitempty"`                    // nil = not graded
 	MaxScore       int        `json:"max_score"`                          // total points at submission time
+}
+
+// Announcement represents a course announcement
+type Announcement struct {
+	gorm.Model
+	CourseID    uint   `gorm:"not null;index:idx_announcement_course_created" json:"course_id"`
+	Title       string `gorm:"size:200;not null" json:"title"`
+	Content     string `gorm:"type:text;not null" json:"content"`
+	CreatedByID uint   `gorm:"not null" json:"created_by_id"`
+}
+
+// AnnouncementRead tracks which users have read which announcements
+type AnnouncementRead struct {
+	ID             uint      `gorm:"primaryKey" json:"id"`
+	AnnouncementID uint      `gorm:"not null;uniqueIndex:idx_announcement_user" json:"announcement_id"`
+	UserID         uint      `gorm:"not null;uniqueIndex:idx_announcement_user" json:"user_id"`
+	ReadAt         time.Time `json:"read_at"`
+}
+
+// AttendanceSession represents a check-in session created by a teacher
+type AttendanceSession struct {
+	gorm.Model
+	CourseID       uint      `gorm:"not null;index:idx_attendance_session_course" json:"course_id"`
+	StartedByID    uint      `gorm:"not null" json:"started_by_id"`
+	StartAt        time.Time `json:"start_at"`
+	EndAt          time.Time `json:"end_at"`
+	TimeoutMinutes int       `gorm:"default:15" json:"timeout_minutes"`
+	Code           string    `gorm:"size:6;not null" json:"code"`
+	IsActive       bool      `gorm:"default:true;index" json:"is_active"`
+}
+
+// AttendanceRecord represents a student's check-in for a session
+type AttendanceRecord struct {
+	gorm.Model
+	SessionID   uint      `gorm:"not null;index:idx_attendance_record_session" json:"session_id"`
+	StudentID   uint      `gorm:"not null;uniqueIndex:idx_session_student" json:"student_id"`
+	CheckedInAt time.Time `json:"checked_in_at"`
+	IPAddress   string    `gorm:"size:45" json:"ip_address"`
+}
+
+// StudentLearningProfile tracks a student's learning analytics and weak points
+type StudentLearningProfile struct {
+	gorm.Model
+	StudentID         uint       `gorm:"not null;uniqueIndex:idx_student_course" json:"student_id"`
+	CourseID          uint       `gorm:"not null;uniqueIndex:idx_student_course" json:"course_id"`
+	WeakPoints        string     `gorm:"type:text" json:"weak_points"`      // JSON: {"高斯定律": 3, "边界条件": 1}
+	CompletedTopics   string     `gorm:"type:text" json:"completed_topics"` // JSON array of completed topic names
+	TotalSessions     int        `gorm:"default:0" json:"total_sessions"`
+	TotalStudyMinutes int        `gorm:"default:0" json:"total_study_minutes"`
+	LastSessionAt     *time.Time `json:"last_session_at,omitempty"`
+	RecommendedTopics string     `gorm:"type:text" json:"recommended_topics,omitempty"` // AI-generated recommendations
 }
