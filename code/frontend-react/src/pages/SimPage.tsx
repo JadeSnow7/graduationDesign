@@ -1,10 +1,8 @@
 import { useSimulation } from '@/domains/simulation/useSimulation';
 import { useSimStore } from '@/domains/simulation/useSimStore';
-import { Atom, Play, Loader2, AlertCircle, Code2, Zap, Terminal, Sparkles, MessageSquare } from 'lucide-react';
+import { Atom, Play, Loader2, AlertCircle, Code2, Zap, Terminal, Sparkles } from 'lucide-react';
 import { clsx } from 'clsx';
 import Editor from '@monaco-editor/react';
-import { useState } from 'react';
-import { SimAIChat } from '@/components/SimAIChat';
 
 const simTypes = [
     { id: 'code', label: 'Python 代码', description: '自定义 Python 仿真代码', icon: Code2 },
@@ -31,9 +29,6 @@ export function SimPage() {
         runAIAssist,
     } = useSimStore();
 
-    // AI Chat sidebar state
-    const [showAIChat, setShowAIChat] = useState(false);
-
     const handleRunSim = () => {
         reset();
         const params = { boundary: 'dirichlet', grid: [100, 100] as [number, number] };
@@ -58,7 +53,7 @@ export function SimPage() {
     const isRunning = isCodeRunning || status === 'running';
 
     return (
-        <div className="h-full min-h-0 flex flex-col bg-gray-950">
+        <div className="h-screen flex flex-col bg-gray-950">
             {/* Header */}
             <header className="px-6 py-4 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm flex items-center justify-between">
                 <div>
@@ -84,19 +79,6 @@ export function SimPage() {
                             运行
                         </>
                     )}
-                </button>
-                {/* AI Chat Toggle */}
-                <button
-                    onClick={() => setShowAIChat(!showAIChat)}
-                    className={clsx(
-                        'py-2.5 px-4 rounded-xl font-medium transition-all flex items-center gap-2',
-                        showAIChat
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    )}
-                >
-                    <MessageSquare className="w-5 h-5" />
-                    AI 问答
                 </button>
             </header>
 
@@ -263,20 +245,7 @@ export function SimPage() {
                     )}
                 </div>
             </div>
-
-            {/* AI Chat Sidebar */}
-            <SimAIChat
-                isOpen={showAIChat}
-                onClose={() => setShowAIChat(false)}
-                context={{
-                    simType: selectedType,
-                    params: selectedType === 'laplace' ? { boundary: 'dirichlet', grid: [100, 100] } : undefined,
-                    results: result ? { min_v: result.min_v, max_v: result.max_v, iter: result.iter } : undefined,
-                    code: selectedType === 'code' ? code : undefined,
-                    codeOutput: codeResult?.output || codeResult?.error || undefined,
-                    codePlots: codeResult?.plots?.length || 0,
-                }}
-            />
         </div>
     );
 }
+

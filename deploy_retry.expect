@@ -1,0 +1,47 @@
+#!/usr/bin/expect -f
+set timeout 600
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect {
+  "password:" { send "Huaodong678\r" }
+  timeout { exit 1 }
+}
+
+expect "ubuntu@"
+# Try installing Ollama again, handle status pager
+send "curl -fsSL https://ollama.com/install.sh | sh\r"
+expect "ubuntu@"
+
+send "ollama --version\r"
+expect "ubuntu@"
+
+# Check service status without pager
+send "systemctl status ollama --no-pager\r"
+expect "ubuntu@"
+
+# Pull model (user requested qwen3:0.6b, if fails we assume it doesn't exist but we tried)
+send "ollama pull qwen3:0.6b\r"
+# giving it time to pull
+expect {
+    "success" { send_user "\nModel pulled\n" }
+    "manifest not found" { send_user "\nModel not found\n" }
+    "ubuntu@" { }
+    timeout { send "\x03" } 
+}
+
+expect "ubuntu@"
+send "cd sysaibox/backend\r"
+expect "backend"
+# Run backend
+send "nohup go run cmd/server/main.go > ../../backend.log 2>&1 & echo $!\r"
+expect {
+    "no such file" { 
+        # try alternative path
+        send "nohup go run main.go > ../../backend.log 2>&1 & echo $!\r" 
+    }
+    timeout { }
+    -re "[0-9]+" { }
+}
+
+expect "ubuntu@"
+send "exit\r"
+expect eof

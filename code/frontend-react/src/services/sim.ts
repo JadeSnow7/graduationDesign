@@ -1,72 +1,50 @@
-/**
- * Simulation Service
- * 
- * Provides API calls for electromagnetic field simulations.
- */
+import { apiClient } from './api/client';
 
-import { apiClient } from '@/lib/api-client';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
+const MOCK_MODE = import.meta.env.VITE_MOCK_API === 'true';
 
 export interface SimulationParams {
+    boundary?: string;
+    grid?: [number, number];
     [key: string]: unknown;
 }
 
 export interface SimulationResult {
-    success: boolean;
-    data?: unknown;
-    error?: string;
-    execution_time?: number;
-    plot_url?: string;
-    // Additional fields from actual simulation responses
-    png_base64?: string;
-    min_v?: number;
-    max_v?: number;
-    iter?: number;
-    output?: string;
-    [key: string]: unknown;  // Allow additional fields
+    png_base64: string;
+    metadata?: Record<string, unknown>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Simulation Service
-// ─────────────────────────────────────────────────────────────────────────────
-
-const SIM_API_BASE = '/api/v1/sim';
-
-async function runSimulation(endpoint: string, params: SimulationParams): Promise<SimulationResult> {
-    const response = await apiClient.post<SimulationResult>(`${SIM_API_BASE}${endpoint}`, params);
-    return response.data;
-}
+// Static mock image (1x1 gray pixel)
+const MOCK_IMAGE =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 export const simService = {
-    /**
-     * Run 2D Laplace equation simulation.
-     */
-    runLaplace2D: (params: SimulationParams): Promise<SimulationResult> => {
-        return runSimulation('/laplace2d', params);
+    async runLaplace2D(params: SimulationParams): Promise<SimulationResult> {
+        if (MOCK_MODE) {
+            await new Promise((r) => setTimeout(r, 500)); // Simulate latency
+            return { png_base64: MOCK_IMAGE };
+        }
+
+        const response = await apiClient.post<SimulationResult>('/sim/laplace2d', params);
+        return response.data;
     },
 
-    /**
-     * Run point charges electric field simulation.
-     */
-    runPointCharges: (params: SimulationParams): Promise<SimulationResult> => {
-        return runSimulation('/point-charges', params);
+    async runPointCharges(params: SimulationParams): Promise<SimulationResult> {
+        if (MOCK_MODE) {
+            await new Promise((r) => setTimeout(r, 500));
+            return { png_base64: MOCK_IMAGE };
+        }
+
+        const response = await apiClient.post<SimulationResult>('/sim/point_charges', params);
+        return response.data;
     },
 
-    /**
-     * Run wire magnetic field simulation.
-     */
-    runWireField: (params: SimulationParams): Promise<SimulationResult> => {
-        return runSimulation('/wire-field', params);
-    },
+    async runWireField(params: SimulationParams): Promise<SimulationResult> {
+        if (MOCK_MODE) {
+            await new Promise((r) => setTimeout(r, 500));
+            return { png_base64: MOCK_IMAGE };
+        }
 
-    /**
-     * Execute custom Python simulation code.
-     */
-    runCustomCode: (code: string): Promise<SimulationResult> => {
-        return runSimulation('/execute', { code });
+        const response = await apiClient.post<SimulationResult>('/sim/wire_field', params);
+        return response.data;
     },
 };
-

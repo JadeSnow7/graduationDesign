@@ -1,79 +1,104 @@
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useState, type FormEvent } from 'react'
-import { login } from '../features/auth/authService'
-import { setAccessToken, setUserRole } from '../shared/auth/tokenStorage'
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/domains/auth/useAuth';
+import { Loader2, GraduationCap } from 'lucide-react';
 
-const LoginPage = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function LoginPage() {
+    const navigate = useNavigate();
+    const { login, status, error } = useAuth();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        try {
+            await login(username, password);
+            navigate('/courses');
+        } catch {
+            // Error is handled by auth state
+        }
+    };
 
-    try {
-      const result = await login({ username, password })
-      setAccessToken(result.access_token)
-      setUserRole(result.role)
+    const isLoading = status === 'loading';
 
-      const redirectTo =
-        (location.state as { from?: { pathname: string } })?.from?.pathname || '/'
-      navigate(redirectTo, { replace: true })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed'
-      setError(message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+                {/* Logo */}
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600/20 border border-blue-500/30 mb-4">
+                        <GraduationCap className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <h1 className="text-3xl font-bold text-white">电磁学教学平台</h1>
+                    <p className="text-gray-400 mt-2">AI 驱动的智能学习系统</p>
+                </div>
 
-  return (
-    <div className="auth">
-      <div className="auth__panel">
-        <div className="auth__header">
-          <h1>Welcome back</h1>
-          <p>Sign in to access courses, AI tutoring, and simulations.</p>
+                {/* Form */}
+                <form
+                    onSubmit={handleSubmit}
+                    className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-xl"
+                >
+                    <div className="space-y-6">
+                        <div>
+                            <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+                                用户名
+                            </label>
+                            <input
+                                id="username"
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="请输入用户名"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                                密码
+                            </label>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="请输入密码"
+                                required
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    登录中...
+                                </>
+                            ) : (
+                                '登录'
+                            )}
+                        </button>
+                    </div>
+                </form>
+
+                {/* Mock mode hint */}
+                {import.meta.env.VITE_MOCK_API === 'true' && (
+                    <p className="text-center text-gray-500 text-sm mt-4">
+                        🧪 Mock Mode: 任意用户名密码即可登录
+                    </p>
+                )}
+            </div>
         </div>
-        <form className="auth__form" onSubmit={handleSubmit}>
-          <label className="field">
-            <span className="field__label">Username</span>
-            <input
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="admin"
-              autoComplete="username"
-              required
-            />
-          </label>
-          <label className="field">
-            <span className="field__label">Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="********"
-              autoComplete="current-password"
-              required
-            />
-          </label>
-          {error ? <div className="alert alert--error">{error}</div> : null}
-          <button type="submit" className="button" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-        <div className="auth__hint">
-          <span>Default accounts:</span>
-          <code>admin / admin123</code>
-        </div>
-      </div>
-    </div>
-  )
+    );
 }
-
-export default LoginPage

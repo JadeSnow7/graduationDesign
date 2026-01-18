@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect "password:" { send "Huaodong678\r" }
+expect "ubuntu@"
+send "ps aux | grep -E 'go run|main' | grep -v grep\r"
+expect "ubuntu@"
+send "ls -la sysaibox/\r"
+expect "ubuntu@"
+send "ls -la sysaibox/backend/\r"
+expect "ubuntu@"
+send "cat sysaibox/backend/cmd/server/main.go | head -30\r"
+expect "ubuntu@"
+send "netstat -tlnp 2>/dev/null | grep LISTEN | head -10\r"
+expect "ubuntu@"
+send "exit\r"
+expect eof

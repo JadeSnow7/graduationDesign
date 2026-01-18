@@ -1,0 +1,11 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect "password:" { send "Huaodong678\r" }
+expect "ubuntu@"
+send "cat sysaibox/backend.log | tail -20\r"
+expect "ubuntu@"
+send "curl -s localhost:8080/health || curl -s localhost:8000/health || echo 'Health check failed'\r"
+expect "ubuntu@"
+send "exit\r"
+expect eof

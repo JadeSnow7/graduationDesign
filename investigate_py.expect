@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect "password:" { send "Huaodong678\r" }
+expect "ubuntu@"
+send "ls -la sysaibox/backend/app/\r"
+expect "ubuntu@"
+send "cat sysaibox/backend/app/main.py 2>/dev/null | head -50 || cat sysaibox/backend/app/__init__.py 2>/dev/null | head -50\r"
+expect "ubuntu@"
+send "curl -s localhost:8080/ | head -20\r"
+expect "ubuntu@"
+send "curl -s localhost:8080/api/v1/health 2>/dev/null || curl -s localhost:8080/api/health 2>/dev/null\r"
+expect "ubuntu@"
+send "exit\r"
+expect eof

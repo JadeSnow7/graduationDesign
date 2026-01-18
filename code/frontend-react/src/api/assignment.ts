@@ -26,13 +26,6 @@ export interface Submission {
     UpdatedAt: string;
 }
 
-export interface AssignmentStats {
-    total_assignments: number;
-    pending_count: number;
-    submitted_count: number;
-    average_grade: number;
-}
-
 export interface CreateAssignmentRequest {
     course_id: number;
     title: string;
@@ -58,12 +51,6 @@ export const assignmentApi = {
         return response.data;
     },
 
-    // Get course assignment stats
-    getStats: async (courseId: number): Promise<AssignmentStats> => {
-        const response = await apiClient.get<AssignmentStats>(`/courses/${courseId}/assignments/stats`);
-        return response.data;
-    },
-
     // Get single assignment
     get: async (id: number): Promise<Assignment> => {
         const response = await apiClient.get<Assignment>(`/assignments/${id}`);
@@ -72,7 +59,7 @@ export const assignmentApi = {
 
     // Create assignment (teacher only)
     create: async (data: CreateAssignmentRequest): Promise<Assignment> => {
-        const response = await apiClient.post<Assignment>(`/courses/${data.course_id}/assignments`, data);
+        const response = await apiClient.post<Assignment>('/assignments', data);
         return response.data;
     },
 
@@ -85,12 +72,6 @@ export const assignmentApi = {
     // List submissions for an assignment (teacher only)
     listSubmissions: async (assignmentId: number): Promise<Submission[]> => {
         const response = await apiClient.get<Submission[]>(`/assignments/${assignmentId}/submissions`);
-        return response.data;
-    },
-
-    // Get my submission for an assignment (student)
-    getMySubmission: async (assignmentId: number): Promise<Submission | null> => {
-        const response = await apiClient.get<Submission | null>(`/assignments/${assignmentId}/my-submission`);
         return response.data;
     },
 

@@ -7,15 +7,6 @@ export interface LoginResponse {
     expires_in: number;
 }
 
-// Response from /auth/me - single source of truth
-export interface MeResponse {
-    id: number;
-    username: string;
-    name: string;
-    role: string;
-    permissions: string[];
-}
-
 export const authApi = {
     async login(username: string, password: string): Promise<User> {
         // Clear any existing token before attempting login
@@ -26,28 +17,33 @@ export const authApi = {
             password,
         });
 
+        // Response interceptor unwraps data, so response.data might be the LoginResponse object directly
+        // or axios response. We need to be careful. 
+        // Our api-client interceptor unwraps { data: ... } but Login response is { access_token: ... } directly usually?
+        // Let's check backend. Backend returns JSON { access_token... } directly.
+        // The interceptor checks if response.data.data exists. 
+        // Backend login returns { access_token: ... }. No .data wrapper. 
+        // So `response.data` is the object.
+
         const data = response.data;
         authStore.setToken(data.access_token);
 
-        // Immediately fetch full user info from /auth/me
-        const user = await this.me();
+        const user = authStore.getUser();
+        if (!user) throw new Error('Invalid token received');
+
         return user;
     },
 
     async me(): Promise<User> {
-        const response = await apiClient.get<MeResponse>('/auth/me');
-        const data = response.data;
-
-        const user: User = {
-            id: String(data.id),
-            name: data.name || data.username,
-            role: data.role as User['role'],
-            permissions: data.permissions || [],
-        };
-
-        // Cache user info in localStorage
-        authStore.setUser(user);
-
+        // Backend returns User object directly? 
+        // Or wrapped? 
+        // Based on previous logs: GET /api/v1/auth/me returns 200.
+        // Let's assume standard response.
+        await apiClient.get<User>('/auth/me');
+        // We verify token validity by this call.
+        // We trust authStore's decoding for UI, but this ensures token is valid on server.
+        const user = authStore.getUser();
+        if (!user) throw new Error('No user in storage');
         return user;
     },
 

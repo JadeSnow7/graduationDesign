@@ -1,0 +1,26 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect {
+  "password:" { send "Huaodong678\r" }
+  timeout { exit 1 }
+}
+
+expect "ubuntu@"
+send "cd sysaibox/backend\r"
+expect "backend"
+
+# Start the Go backend
+send "nohup go run cmd/server/main.go > ../../backend.log 2>&1 & echo $!\r"
+expect {
+    "no such file" { 
+        # try simple path
+        send "nohup go run main.go > ../../backend.log 2>&1 & echo $!\r" 
+    }
+    -re "\\d+" {
+        # Successfully started probably
+    }
+}
+expect "ubuntu@"
+send "exit\r"
+expect eof

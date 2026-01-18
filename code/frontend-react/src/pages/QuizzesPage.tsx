@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ClipboardList, Plus, Clock, AlertCircle, Loader2, Trophy } from 'lucide-react';
+import {
+    ClipboardList, Plus, Clock,
+    AlertCircle, Loader2, Trophy
+} from 'lucide-react';
 import { quizApi, type Quiz, type QuizWithAttempt } from '@/api/quiz';
 import { authStore } from '@/lib/auth-store';
 
@@ -111,6 +114,7 @@ export function QuizzesPage() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {quizzes.map((quiz) => {
                         const status = getQuizStatus(quiz);
+
 
                         return (
                             <Link

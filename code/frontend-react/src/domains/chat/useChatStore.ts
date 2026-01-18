@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { aiStreamClient } from '@/lib/ai-stream';
 import type { ChatMessage } from '@/api/ai';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,21 +30,6 @@ interface ChatStoreState {
     mode: string;
     rag: boolean;
 
-    // Guided learning session state
-    guidedSession: {
-        sessionId: string | null;
-        currentStep: number;
-        totalSteps: number;
-        progressPercentage: number;
-        weakPoints: string[];
-        learningPath: Array<{
-            step: number;
-            title: string;
-            description: string;
-            questions: string[];
-        }>;
-    } | null;
-
     // Actions
     getCurrentConversation: () => Conversation | null;
     getMessages: () => ChatMessage[];
@@ -54,8 +40,8 @@ interface ChatStoreState {
     deleteConversation: (id: string) => void;
     clearHistory: () => void;
 
-    // Message actions (deprecated - use orchestrator directly)
-    sendMessage: (prompt: string) => void;
+    // Message actions
+    sendMessage: (prompt: string) => Promise<void>;
     appendToken: (token: string) => void;
     stop: () => void;
     setError: (error: string | null) => void;
@@ -66,20 +52,31 @@ interface ChatStoreState {
     setRag: (rag: boolean) => void;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Store Implementation
-// ─────────────────────────────────────────────────────────────────────────────
+// Track abort controller outside Zustand (non-serializable)
+let abortController: AbortController | null = null;
+
+function generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function generateTitle(messages: ChatMessage[]): string {
+    const firstUserMsg = messages.find(m => m.role === 'user');
+    if (firstUserMsg) {
+        return firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? '...' : '');
+    }
+    return '新对话';
+}
 
 export const useChatStore = create<ChatStoreState>()(
     persist(
         (set, get) => ({
+            // Initial state
             status: 'idle',
             currentConversationId: null,
             error: null,
             conversations: [],
             mode: 'tutor',
             rag: false,
-            guidedSession: null,
 
             // Get current conversation
             getCurrentConversation: () => {
@@ -94,52 +91,113 @@ export const useChatStore = create<ChatStoreState>()(
                 return conv?.messages || [];
             },
 
-            // Create new conversation - delegates to orchestrator
+            // Create new conversation
             newConversation: () => {
-                // Lazy import to avoid circular dependency
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleNewConversationIntent();
-                });
-                // Return empty string - orchestrator will set the ID
-                return '';
+                const id = generateId();
+                const newConv: Conversation = {
+                    id,
+                    title: '新对话',
+                    messages: [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                };
+                set(state => ({
+                    conversations: [newConv, ...state.conversations],
+                    currentConversationId: id,
+                    status: 'idle',
+                    error: null,
+                }));
+                return id;
             },
 
             // Select existing conversation
             selectConversation: (id: string) => {
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleSelectConversationIntent(id);
-                });
+                // Abort any ongoing stream when switching
+                abortController?.abort();
+                set({ currentConversationId: id, status: 'idle', error: null });
             },
 
             // Delete conversation
             deleteConversation: (id: string) => {
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleDeleteConversationIntent(id);
+                set(state => {
+                    const filtered = state.conversations.filter(c => c.id !== id);
+                    const newCurrentId = state.currentConversationId === id
+                        ? (filtered[0]?.id || null)
+                        : state.currentConversationId;
+                    return {
+                        conversations: filtered,
+                        currentConversationId: newCurrentId,
+                    };
                 });
             },
 
             // Clear all history
             clearHistory: () => {
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleClearHistoryIntent();
-                });
+                set({ conversations: [], currentConversationId: null, status: 'idle' });
             },
 
-            /**
-             * Send message - async action
-             * @deprecated Use chatOrchestrator.handleSendIntent() directly
-             */
-            sendMessage: (prompt: string) => {
-                if (import.meta.env.DEV) {
-                    console.warn('[useChatStore] sendMessage is deprecated. Use chatOrchestrator.handleSendIntent()');
+            // Send message - async action
+            sendMessage: async (prompt: string) => {
+                let { currentConversationId, conversations, mode, rag } = get();
+
+                // Create new conversation if none exists
+                if (!currentConversationId) {
+                    currentConversationId = get().newConversation();
                 }
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleSendIntent(prompt);
-                });
+
+                // Add user message and assistant placeholder
+                const conv = conversations.find(c => c.id === currentConversationId)!;
+                const updatedMessages: ChatMessage[] = [
+                    ...conv.messages,
+                    { role: 'user', content: prompt },
+                    { role: 'assistant', content: '' },
+                ];
+
+                // Update conversation
+                set(state => ({
+                    status: 'streaming',
+                    error: null,
+                    conversations: state.conversations.map(c =>
+                        c.id === currentConversationId
+                            ? {
+                                ...c,
+                                messages: updatedMessages,
+                                title: c.messages.length === 0 ? generateTitle(updatedMessages) : c.title,
+                                updatedAt: Date.now()
+                            }
+                            : c
+                    ),
+                }));
+
+                // Start streaming
+                abortController?.abort();
+                abortController = new AbortController();
+
+                // Build effective mode
+                let effectiveMode = mode || 'tutor';
+                if (rag) {
+                    effectiveMode = `${effectiveMode}_rag`;
+                }
+
+                // Filter empty messages for API call
+                const filteredMessages = updatedMessages.filter(m => m.content.trim() !== '');
+
+                try {
+                    await aiStreamClient.streamChat(filteredMessages, {
+                        mode: effectiveMode,
+                        signal: abortController.signal,
+                        onMessage: (token: string) => get().appendToken(token),
+                        onFinish: () => get().finishStreaming(),
+                        onError: (error: Error) => get().setError(error.message),
+                    });
+                } catch (err: any) {
+                    if (err.name !== 'AbortError') {
+                        get().setError(err.message || 'Stream failed');
+                    }
+                }
             },
 
             // Append token to current assistant message
-            // Note: This is called by the orchestrator
             appendToken: (token: string) => {
                 const { currentConversationId } = get();
                 if (!currentConversationId) return;
@@ -157,17 +215,10 @@ export const useChatStore = create<ChatStoreState>()(
                 }));
             },
 
-            /**
-             * Stop streaming
-             * @deprecated Use chatOrchestrator.handleStopIntent() directly
-             */
+            // Stop streaming
             stop: () => {
-                if (import.meta.env.DEV) {
-                    console.warn('[useChatStore] stop is deprecated. Use chatOrchestrator.handleStopIntent()');
-                }
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleStopIntent();
-                });
+                abortController?.abort();
+                set({ status: 'idle' });
             },
 
             // Set error
@@ -181,16 +232,8 @@ export const useChatStore = create<ChatStoreState>()(
             },
 
             // Set mode
-            setMode: (mode: string) => {
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleModeChangeIntent(mode);
-                });
-            },
-            setRag: (rag: boolean) => {
-                import('./orchestrator').then(({ chatOrchestrator }) => {
-                    chatOrchestrator.handleRagChangeIntent(rag);
-                });
-            },
+            setMode: (mode: string) => set({ mode }),
+            setRag: (rag: boolean) => set({ rag }),
         }),
         {
             name: 'chat-storage',
@@ -204,6 +247,3 @@ export const useChatStore = create<ChatStoreState>()(
         }
     )
 );
-
-// Re-export types for convenience
-export type { ChatStatus, Conversation, ChatStoreState };

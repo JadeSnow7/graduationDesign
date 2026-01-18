@@ -30,36 +30,45 @@ type loginResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int64  `json:"expires_in"`
+	UserID      uint   `json:"user_id,omitempty"`
+	Username    string `json:"username,omitempty"`
+	Role        string `json:"role,omitempty"`
 }
 
 func (h *authHandlers) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": gin.H{"message": "invalid request"}})
 		return
 	}
 
 	var u models.User
 	if err := h.db.Where("username = ?", req.Username).First(&u).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": gin.H{"message": "invalid username or password"}})
 		return
 	}
 	if !auth.VerifyPassword(u.PasswordHash, req.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": gin.H{"message": "invalid username or password"}})
 		return
 	}
 
 	ttl := 24 * time.Hour
 	token, err := auth.SignToken(h.jwtSecret, u.ID, u.Username, u.Role, ttl)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "token sign failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": gin.H{"message": "token sign failed"}})
 		return
 	}
 
-	c.JSON(http.StatusOK, loginResponse{
-		AccessToken: token,
-		TokenType:   "Bearer",
-		ExpiresIn:   int64(ttl.Seconds()),
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": loginResponse{
+			AccessToken: token,
+			TokenType:   "Bearer",
+			ExpiresIn:   int64(ttl.Seconds()),
+			UserID:      u.ID,
+			Username:    u.Username,
+			Role:        u.Role,
+		},
 	})
 }
 

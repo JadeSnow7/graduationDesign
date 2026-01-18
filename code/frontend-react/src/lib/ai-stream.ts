@@ -6,7 +6,6 @@ interface StreamOptions {
     mode?: string;
     onStart?: (model: string) => void;
     onMessage: (content: string) => void;
-    onReasoning?: (content: string) => void;
     onError: (error: Error) => void;
     onFinish: () => void;
     signal?: AbortSignal;
@@ -15,7 +14,6 @@ interface StreamOptions {
 interface SSEEvent {
     type?: 'start' | 'done';
     content?: string;
-    reasoning?: string;
     model?: string;
     error?: string;
 }
@@ -90,10 +88,6 @@ export const aiStreamClient = {
                                     return;
                                 } else if (event.content) {
                                     options.onMessage(event.content);
-                                }
-
-                                if (event.reasoning) {
-                                    options.onReasoning?.(event.reasoning);
                                 }
                             } catch (e) {
                                 // Not valid JSON, might be raw text

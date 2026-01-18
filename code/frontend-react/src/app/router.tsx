@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/domains/auth/useAuth';
-import ProtectedRoute from './ProtectedRoute';
+import { ProtectedRoute } from './ProtectedRoute';
 
 // Pages
-import LoginPage from '@/pages/LoginPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { CoursesPage } from '@/pages/CoursesPage';
 import { CourseLayout } from '@/pages/CourseLayout';
 import { OverviewPage } from '@/pages/OverviewPage';
@@ -12,12 +12,11 @@ import { SimPage } from '@/pages/SimPage';
 import { AssignmentsPage } from '@/pages/AssignmentsPage';
 import { AssignmentDetailPage } from '@/pages/AssignmentDetailPage';
 import { ResourcesPage } from '@/pages/ResourcesPage';
-import ProfilePage from '@/pages/ProfilePage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import { QuizzesPage } from '@/pages/QuizzesPage';
 import { QuizDetailPage } from '@/pages/QuizDetailPage';
 import { ChaptersPage } from '@/pages/ChaptersPage';
-import { ChapterDetailPage } from '@/pages/ChapterDetailPage';
-import { AdminPage } from '@/pages/AdminPage';
+import { ChapterContentPage } from '@/pages/ChapterContentPage';
 
 export function AppRouter() {
     return (
@@ -31,12 +30,9 @@ export function AppRouter() {
                     <Route element={<ProtectedRoute />}>
                         <Route path="/courses" element={<CoursesPage />} />
                         <Route path="/profile" element={<ProfilePage />} />
-                        <Route path="/admin" element={<AdminPage />} />
                         <Route path="/courses/:courseId" element={<CourseLayout />}>
                             <Route index element={<Navigate to="overview" replace />} />
                             <Route path="overview" element={<OverviewPage />} />
-                            <Route path="chapters" element={<ChaptersPage />} />
-                            <Route path="chapters/:chapterId" element={<ChapterDetailPage />} />
                             <Route path="chat" element={<ChatPage />} />
                             <Route path="simulation" element={<SimPage />} />
                             <Route path="assignments" element={<AssignmentsPage />} />
@@ -44,6 +40,8 @@ export function AppRouter() {
                             <Route path="resources" element={<ResourcesPage />} />
                             <Route path="quizzes" element={<QuizzesPage />} />
                             <Route path="quizzes/:quizId" element={<QuizDetailPage />} />
+                            <Route path="chapters" element={<ChaptersPage />} />
+                            <Route path="chapters/:chapterId" element={<ChapterContentPage />} />
                         </Route>
                     </Route>
 

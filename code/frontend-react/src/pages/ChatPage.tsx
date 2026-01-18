@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useChatStore } from '@/domains/chat/useChatStore';
 import { Send, Square, Bot, User, Plus, Trash2, MessageSquare } from 'lucide-react';
 import { clsx } from 'clsx';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 export function ChatPage() {
     const {
@@ -21,13 +20,10 @@ export function ChatPage() {
     const messages = getMessages();
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom when new messages arrive
+    // Auto-scroll to bottom
     useEffect(() => {
-        if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
     const handleSubmit = (e: FormEvent) => {
@@ -40,10 +36,10 @@ export function ChatPage() {
     const isStreaming = status === 'streaming';
 
     return (
-        <div className="h-full flex bg-gray-900" style={{ maxHeight: '100%', overflow: 'hidden' }}>
+        <div className="h-screen flex">
             {/* History Sidebar */}
-            <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0" style={{ maxHeight: '100%' }}>
-                <div className="p-4 border-b border-gray-800 flex-shrink-0">
+            <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+                <div className="p-4 border-b border-gray-800">
                     <button
                         onClick={() => newConversation()}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-medium"
@@ -89,9 +85,9 @@ export function ChatPage() {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col" style={{ maxHeight: '100%', overflow: 'hidden' }}>
+            <div className="flex-1 flex flex-col">
                 {/* Header */}
-                <header className="px-6 py-4 border-b border-gray-700/50 bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
+                <header className="px-6 py-4 border-b border-gray-700/50 bg-gray-900/50 backdrop-blur-sm">
                     <h1 className="text-xl font-semibold text-white flex items-center gap-2">
                         <Bot className="w-6 h-6 text-blue-400" />
                         AI 智能答疑
@@ -101,12 +97,8 @@ export function ChatPage() {
                     </p>
                 </header>
 
-                {/* Messages - scrollable area */}
-                <div
-                    ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto p-6 space-y-4"
-                    style={{ minHeight: 0 }}
-                >
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {messages.length === 0 && (
                         <div className="text-center text-gray-500 py-12">
                             <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -135,16 +127,12 @@ export function ChatPage() {
                                         : 'bg-gray-800 text-gray-100 rounded-bl-md border border-gray-700'
                                 )}
                             >
-                                {msg.role === 'assistant' ? (
-                                    <div className="ai-response">
-                                        <MarkdownRenderer content={msg.content} />
-                                        {isStreaming && idx === messages.length - 1 && (
-                                            <span className="inline-block w-2 h-4 bg-blue-400 ml-1 animate-pulse" />
-                                        )}
-                                    </div>
-                                ) : (
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                                )}
+                                <p className="whitespace-pre-wrap">
+                                    {msg.content}
+                                    {msg.role === 'assistant' && isStreaming && idx === messages.length - 1 && (
+                                        <span className="inline-block w-2 h-4 bg-blue-400 ml-1 animate-pulse" />
+                                    )}
+                                </p>
                             </div>
                             {msg.role === 'user' && (
                                 <div className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center flex-shrink-0">
@@ -180,10 +168,10 @@ export function ChatPage() {
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input - fixed at bottom */}
+                {/* Input */}
                 <form
                     onSubmit={handleSubmit}
-                    className="p-4 border-t border-gray-700/50 bg-gray-900 flex-shrink-0"
+                    className="p-4 border-t border-gray-700/50 bg-gray-900/50 backdrop-blur-sm"
                 >
                     <div className="flex gap-3">
                         <input
@@ -219,3 +207,4 @@ export function ChatPage() {
         </div>
     );
 }
+

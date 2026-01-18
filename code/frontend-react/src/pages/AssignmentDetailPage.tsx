@@ -43,13 +43,6 @@ export function AssignmentDetailPage() {
             if (isTeacher) {
                 const subs = await assignmentApi.listSubmissions(parseInt(assignmentId));
                 setSubmissions(subs);
-            } else if (isStudent) {
-                // Load student's existing submission
-                const mySub = await assignmentApi.getMySubmission(parseInt(assignmentId));
-                if (mySub) {
-                    setMySubmission(mySub);
-                    setContent(mySub.content || '');
-                }
             }
         } catch (err: any) {
             setError(err.message || 'Failed to load assignment');

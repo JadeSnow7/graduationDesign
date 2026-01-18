@@ -1,0 +1,40 @@
+#!/usr/bin/expect -f
+set timeout 600
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect {
+  "password:" { send "Huaodong678\r" }
+  timeout { send_user "\nTimeout waiting for password\n"; exit 1 }
+}
+
+# 1. Install Ollama if missing
+expect "ubuntu@"
+send "if ! command -v ollama &> /dev/null; then curl -fsSL https://ollama.com/install.sh | sh; fi\r"
+
+# 2. Wait for installation to complete and service check
+expect "ubuntu@"
+send "systemctl status ollama\r"
+
+# 3. Pull and Run Model (background)
+# Note: 'ollama run' is interactive. 'ollama pull' then 'serve' is better, but service runs serve.
+# We just need to pull the model.
+expect "ubuntu@"
+send "ollama pull qwen3:0.6b\r"
+
+# 4. Start Backend (in mock-sysaibox or sysaibox? Assuming sysaibox based on name)
+# Check for backend directory
+expect "ubuntu@"
+send "cd sysaibox && ls -F\r"
+
+expect {
+  "go.mod" {
+     # Start backend with nohup
+     send "nohup go run cmd/main.go > backend.log 2>&1 & echo $!\r"
+  }
+  "No such file" {
+     send_user "Backend directory not found or invalid\n"
+  }
+}
+
+expect "ubuntu@"
+send "exit\r"
+expect eof

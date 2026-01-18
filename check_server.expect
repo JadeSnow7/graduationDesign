@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+set timeout 20
+spawn ssh -o StrictHostKeyChecking=no ubuntu@106.54.188.236
+expect {
+  "password:" { send "Huaodong678\r" }
+  timeout { send_user "\nTimeout waiting for password\n"; exit 1 }
+}
+expect {
+  "ubuntu@" { send "ls -F\r" }
+  timeout { send_user "\nTimeout waiting for shell prompt\n"; exit 1 }
+}
+expect {
+  "ubuntu@" { send "which ollama\r" }
+  timeout { exit 1 }
+}
+expect {
+  "ubuntu@" { send "exit\r" }
+}
+expect eof

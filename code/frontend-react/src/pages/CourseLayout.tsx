@@ -3,6 +3,7 @@ import { CourseProvider, useCourse } from '@/domains/course/useCourse';
 import {
     LayoutDashboard,
     MessageSquare,
+    BookOpen, // Use BookOpen for chapters
     Atom,
     FileText,
     FolderOpen,
@@ -10,14 +11,13 @@ import {
     Loader2,
     User,
     ClipboardList,
-    BookOpen,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { authStore } from '@/lib/auth-store';
 
 const navItems = [
     { path: 'overview', label: '课程概览', icon: LayoutDashboard },
-    { path: 'chapters', label: '章节', icon: BookOpen },
+    { path: 'chapters', label: '章节学习', icon: BookOpen },
     { path: 'chat', label: 'AI 答疑', icon: MessageSquare },
     { path: 'simulation', label: '电磁仿真', icon: Atom },
     { path: 'assignments', label: '作业', icon: FileText },
@@ -38,9 +38,9 @@ function CourseLayoutInner() {
     }
 
     return (
-        <div className="h-screen min-h-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex">
             {/* Sidebar */}
-            <aside className="w-64 bg-gray-900/80 border-r border-gray-700/50 flex flex-col min-h-0">
+            <aside className="w-64 bg-gray-900/80 border-r border-gray-700/50 flex flex-col">
                 {/* Back link + Profile */}
                 <div className="flex items-center justify-between px-4 h-16 border-b border-gray-700/50">
                     <Link
@@ -93,7 +93,7 @@ function CourseLayoutInner() {
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 min-h-0 overflow-hidden">
+            <main className="flex-1 overflow-auto">
                 <Outlet />
             </main>
         </div>

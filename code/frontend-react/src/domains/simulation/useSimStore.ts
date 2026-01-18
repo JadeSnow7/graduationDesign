@@ -136,7 +136,7 @@ Available modules (pre-imported, NO import statements needed):
 
 Modify or improve the code based on the user's request. Return ONLY the modified Python code, no explanations.`;
 
-            const response = await apiClient.post<{ reply: string }>('/ai/chat', {
+            const response = await apiClient.post<{ response: string }>('/ai/chat', {
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `Current code:\n\`\`\`python\n${code}\n\`\`\`\n\nRequest: ${aiPrompt}` }
@@ -145,7 +145,7 @@ Modify or improve the code based on the user's request. Return ONLY the modified
             });
 
             // Extract code from response
-            const responseText = response.data.reply;
+            const responseText = response.data.response;
             const codeMatch = responseText.match(/```python\n([\s\S]*?)```/);
             if (codeMatch) {
                 set({ code: codeMatch[1] });

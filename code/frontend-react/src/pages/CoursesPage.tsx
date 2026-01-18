@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { courseApi, type Course } from '@/api/course';
 import { useAuth } from '@/domains/auth/useAuth';
-import { BookOpen, LogOut, Loader2, Plus, X, User, Settings } from 'lucide-react';
+import { BookOpen, LogOut, Loader2, Plus, X, User } from 'lucide-react';
 
 export function CoursesPage() {
     const { user, logout } = useAuth();
@@ -48,15 +48,6 @@ export function CoursesPage() {
                         <span className="text-xl font-semibold text-white">我的课程</span>
                     </div>
                     <div className="flex items-center gap-4">
-                        {user?.role === 'admin' && (
-                            <Link
-                                to="/admin"
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 hover:border-purple-500/50 text-purple-300 hover:text-purple-200 transition-all"
-                            >
-                                <Settings className="w-4 h-4" />
-                                <span>管理面板</span>
-                            </Link>
-                        )}
                         <Link
                             to="/profile"
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"

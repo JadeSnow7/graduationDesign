@@ -22,11 +22,19 @@
 - [组件设计](./architecture/component-design.md)
 - [前端分层架构](./architecture/react-layered-architecture.md)
 
+### 🧩 [规格与计划](./specs/)
+- [Mini App 技术选型建议](./specs/mini-app-selection.md)
+
 ### 🔌 [API 文档](./api/)
 - [认证接口](./api/authentication.md)
 - [课程管理接口](./api/course-management.md)
 - [AI 服务接口](./api/ai-services.md)
 - [仿真服务接口](./api/simulation-services.md)
+
+### [AI 文档（模型与智能能力）](./ai/)
+- [GraphRAG 用法](./ai/graph-rag.md)
+- [学习状态分析模块](./ai/learning-analytics.md)
+- [后训练与微调计划](./ai/post-training-finetuning-plan.md)
 
 ### 🚀 [部署文档](./deployment/)
 - [部署指南](./deployment/README.md)
