@@ -319,3 +319,140 @@ Teaching Assistant (EM Field)
 - 先调 `max_seq_len`（直接决定显存与信息覆盖）
 - 再调 `lr`（决定收敛速度/稳定性）
 - 最后才调 `r/alpha`（决定适配容量）
+
+### 10.5 Qwen3-Embedding（0.6B/4B/8B）怎么选 + 第一阶段计划（GraphRAG 打底）
+
+选型建议（你是“本地 GPU + 1-2 门课知识库 + 相关代码”）：
+- **默认推荐：4B**（质量/速度/显存更均衡，通常够用）
+- **0.6B**：只在你必须把“embedding + 生成模型”长期同机常驻、且显存很紧时用（可能牺牲专业术语/代码召回）
+- **8B**：当 4B 召回明显不够、且你能接受更高显存占用/单独跑 embedding 服务时再上
+
+注意：embedding 模型一旦更换，需要**重建向量库**（同一索引不能混用不同 embedding 的向量空间）。
+
+第一阶段（3-5 天）目标：把“检索质量”跑到可用，再开始 SFT（否则你会把问题错归因到微调）。
+- **D1：语料与切块**
+  - 课程文档：按标题层级切，目标每 chunk 约 300–800 中文字符（可少量 overlap）
+  - 代码：按函数/类切；chunk 里带上 `file_path + symbol_name + 简短注释`（召回会明显提升）
+- **D2：建索引**
+  - 固定 `EMBEDDING_MODEL`（先用 4B）后构建 GraphRAG 索引与向量库
+  - 输出物：`graphrag_index.json` + `VECTOR_STORE_PATH` 目录
+- **D3：检索回归集（强烈建议）**
+  - 手工做 30-50 条查询（概念/公式/代码用法/常见误区各占一点），记录“期望命中片段”
+  - 调参起步：`seed_top_k=6`、`final_top_k=10`、`expand_hops=1`、`max_context_chars=6000`
+- **D4-5：决定是否升档**
+  - 如果“核心查询的 recall@10”仍明显不足（例如 < 70%）且主要瓶颈是语义召回而不是切块/元数据，才考虑从 4B 升到 8B
+  - 若问题主要来自切块/标题丢失/代码无元信息，先修数据与切块，别急着换 8B
+
+---
+
+## 11. 数据收集实操清单（Week 1-2）
+
+> 本节给出可直接执行的数据收集步骤，与 [训练数据规范](./training-data-spec.md) 配合使用。
+
+### 11.1 数据来源与负责
+
+| 来源 | 预估条数 | 收集方式 | 优先级 |
+|------|----------|----------|--------|
+| 课程 FAQ | 50-100 | 导出企业微信/讨论区历史 | P0 |
+| 作业题库 | 100-200 | 从作业管理模块导出 | P1 |
+| 讲义章节 | 50-100 | 按章提取核心 QA | P1 |
+| 合成数据 | 100-200 | LLM 生成 + 人工校验 | P2 |
+
+### 11.2 收集脚本（示例）
+
+```bash
+# 1. 创建数据目录结构
+mkdir -p data/training/{raw,processed,eval}
+
+# 2. 导出 FAQ（从数据库或 API）
+python scripts/export_faq.py --output data/training/raw/faq.jsonl
+
+# 3. 导出作业解析
+python scripts/export_assignments.py --output data/training/raw/assignments.jsonl
+
+# 4. 格式转换
+python scripts/convert_to_sft.py \
+  --input data/training/raw/ \
+  --output data/training/processed/
+```
+
+### 11.3 质量检查清单
+
+- [ ] 每条样本有唯一 `id`
+- [ ] `mode` 与 system prompt 匹配
+- [ ] RAG 样本引用编号与片段对应
+- [ ] 工具调用参数格式正确
+- [ ] 无敏感信息（学生姓名、学号）
+- [ ] 符号风格统一
+
+### 11.4 交付物
+
+| 文件 | 格式 | 条数 |
+|------|------|------|
+| `data/training/processed/style_sft.jsonl` | JSONL | 200-500 |
+| `data/training/processed/tool_sft.jsonl` | JSONL | 100-200 |
+| `data/training/processed/rag_sft.jsonl` | JSONL | 100-200 |
+
+---
+
+## 12. 评估基准集设计（固定测试集）
+
+> 本节定义用于回归对比与论文消融实验的固定评测集。
+
+### 12.1 基准集结构
+
+```
+data/training/eval/
+├── benchmark.jsonl       # 50-100 条固定查询
+├── expected_outputs.json # 标准答案与预期引用
+└── eval_config.yaml      # 评测配置
+```
+
+### 12.2 查询类型分布
+
+| 类型 | 条数 | 示例 |
+|------|------|------|
+| 概念解释 | 15 | "什么是电磁场边界条件？" |
+| 公式推导 | 15 | "推导平面波反射系数公式" |
+| 数值计算 | 10 | "计算铜在 1GHz 的趋肤深度" |
+| 仿真解读 | 5 | "解释 Laplace 二维场分布图" |
+| 拒答/边界 | 5 | "这道题的答案是什么？"（应拒答） |
+
+### 12.3 标注格式
+
+```json
+{
+  "id": "eval-0001",
+  "query": "什么是电磁场边界条件？",
+  "type": "concept",
+  "expected": {
+    "key_points": ["切向连续", "法向不连续", "面电荷"],
+    "citations": ["ch2.3", "eq:boundary"],
+    "tool_calls": [],
+    "should_refuse": false
+  }
+}
+```
+
+### 12.4 自动化评测指标
+
+```python
+# eval_metrics.py
+METRICS = {
+    "citation_accuracy": "回答引用与 expected.citations 交集 / 期望引用数",
+    "tool_call_accuracy": "工具调用名称/参数与 expected.tool_calls 匹配率",
+    "key_point_coverage": "回答覆盖 expected.key_points 的比例",
+    "refusal_accuracy": "should_refuse=True 时是否正确拒答",
+    "response_format": "是否符合 ### 结论/推导/检查 结构"
+}
+```
+
+### 12.5 目标阈值（论文基线）
+
+| 指标 | 目标 |
+|------|------|
+| 引用正确率 | ≥ 85% |
+| 工具调用准确率 | ≥ 90% |
+| 关键点覆盖率 | ≥ 80% |
+| 拒答准确率 | ≥ 95% |
+| 格式合规率 | ≥ 90% |

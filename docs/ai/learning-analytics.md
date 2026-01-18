@@ -139,3 +139,136 @@ print(f"概念: {analysis.detected_concepts}, 置信度: {analysis.confidence:.2
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
 | 2026-01-12 | 1.0 | 初始版本：实现薄弱点检测、学生档案、辅导策略生成 |
+| 2026-01-19 | 1.1 | 新增个性化辅导与学习状态追踪文档 |
+
+---
+
+## 个性化学习辅助
+
+### 辅导策略生成
+
+基于学生学习档案，系统自动生成个性化的辅导策略。辅导策略技能（`CoachingStrategySkill`）通过分析以下维度生成建议：
+
+| 维度 | 数据来源 | 辅导策略 |
+|------|----------|----------|
+| 高频薄弱点 | `weak_points` 出现次数 ≥ 3 | 专项练习 + 概念讲解 |
+| 学习进度 | `completed_topics` 列表 | 推荐下一个学习主题 |
+| 学习时长 | `total_study_minutes` | 调整学习节奏建议 |
+| 最近活跃 | `last_session_at` | 复习提醒 |
+
+### 辅导策略输出格式
+
+```json
+{
+  "策略类型": "个性化辅导",
+  "薄弱点专项": [
+    {
+      "概念": "边界条件",
+      "出现次数": 5,
+      "建议": "复习第2章边界条件推导，完成练习题2.3-2.5"
+    }
+  ],
+  "推荐主题": ["电磁波传播", "波阻抗计算"],
+  "学习计划": {
+    "本周重点": "巩固边界条件理解",
+    "下周目标": "开始电磁波章节学习"
+  }
+}
+```
+
+### 前端集成
+
+辅导策略在引导式学习界面显示：
+- **薄弱点卡片**：高亮显示高频错误概念
+- **推荐学习路径**：按依赖关系排序的学习主题
+- **进度条**：已完成 vs 推荐主题
+
+---
+
+## 学习状态追踪
+
+### 数据流架构
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    前端（React/Expo）                            │
+│  StudyTimer 组件 ───────────────────────────▶ 心跳上报           │
+│  学习会话 ─────────────────────────────────▶ 对话消息           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Go 后端                                       │
+│  /api/v1/chapters/:id/heartbeat ───────▶ 累计学习时长            │
+│  /api/v1/learning-profiles/:id ────────▶ 学生档案 CRUD           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    AI 服务                                       │
+│  WeakPointDetector ────────────────────▶ 实时薄弱点检测          │
+│  ProfileSyncClient ────────────────────▶ 档案同步               │
+│  CoachingStrategySkill ────────────────▶ 辅导策略生成            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 学习时长追踪
+
+前端 `StudyTimer` 组件通过心跳机制追踪学习时长：
+
+```typescript
+// 每 30 秒发送一次心跳
+const HEARTBEAT_INTERVAL = 30000;
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    fetch(`/api/v1/chapters/${chapterId}/heartbeat`, {
+      method: 'POST',
+      body: JSON.stringify({ duration: 30 })
+    });
+  }, HEARTBEAT_INTERVAL);
+  
+  // 页面隐藏时暂停
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  return () => clearInterval(timer);
+}, []);
+```
+
+### 学习档案 API
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/learning-profiles/{course}/{student}` | GET | 获取学生档案 |
+| `/api/v1/learning-profiles` | POST | 创建/更新档案 |
+| `/api/v1/learning-profiles/{id}/weak-points` | PATCH | 合并薄弱点 |
+
+### 档案数据结构
+
+```python
+@dataclass
+class StudentProfile:
+    student_id: int
+    course_id: int
+    weak_points: dict[str, int]      # 概念 -> 出现次数
+    completed_topics: list[str]       # 已完成主题
+    total_sessions: int               # 学习会话数
+    total_study_minutes: int          # 累计学习时长
+    last_session_at: datetime         # 最近学习时间
+    recommended_topics: list[str]     # 推荐学习主题
+```
+
+---
+
+## 与后训练的关联
+
+学习状态分析模块产生的数据可用于后训练数据集构建：
+
+| 数据类型 | 用途 | 训练阶段 |
+|----------|------|----------|
+| 高频薄弱点 | 构建"常见错误纠正"样本 | 阶段 B（教学风格 SFT） |
+| 辅导策略输出 | 作为个性化回答的参考 | 阶段 D（RAG 落地 SFT） |
+| 学习路径数据 | 构建"引导式教学"样本 | 阶段 B |
+
+详见 [训练数据规范](./training-data-spec.md) 和 [后训练计划](./post-training-finetuning-plan.md)。
+
