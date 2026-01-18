@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)](https://golang.org/)
-[![Vue Version](https://img.shields.io/badge/Vue-3.5+-green.svg)](https://vuejs.org/)
+[![React](https://img.shields.io/badge/React-19+-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![Python Version](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org/)
 
 ## 📋 项目概览
@@ -26,11 +26,13 @@
 
 | 组件 | 技术选型 | 版本 |
 |------|---------|------|
-| 前端 | Vue.js + TypeScript + Vite | 3.5+ |
+| Web 前端 | React + TypeScript + Vite | 19+ |
+| 移动端（可选） | Expo (React Native) | - |
 | 后端 | Go + Gin + GORM | 1.24+ |
 | AI服务 | Python + FastAPI | 3.9+ |
-| 仿真服务 | Python + NumPy + SciPy | 3.9+ |
+| 仿真服务 | Python + FastAPI + NumPy/SciPy | 3.9+ |
 | 数据库 | MySQL | 8.4+ |
+| 对象存储 | MinIO | - |
 | 容器化 | Docker + Docker Compose | - |
 
 ### 系统架构图
@@ -38,7 +40,7 @@
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   前端应用      │    │   后端API       │    │   AI服务        │
-│   Vue.js        │◄──►│   Go + Gin      │◄──►│   FastAPI       │
+│   React + Vite  │◄──►│   Go + Gin      │◄──►│   FastAPI       │
 │   Port: 5173    │    │   Port: 8080    │    │   Port: 8001    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
@@ -48,12 +50,19 @@
                        │   MySQL         │    │   FastAPI       │
                        │   Port: 3306    │    │   Port: 8002    │
                        └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   对象存储      │
+                       │   MinIO         │
+                       │ Port: 9000/9001 │
+                       └─────────────────┘
 ```
 
 ## 📁 项目结构
 
 ```
-education-project/
+project-root/
 ├── 📄 README.md                    # 项目总览和导航
 ├── 📄 CHANGELOG.md                 # 变更日志
 ├── 📄 CONTRIBUTING.md              # 贡献指南
@@ -61,13 +70,15 @@ education-project/
 ├── 📄 .gitignore                   # Git忽略规则
 │
 ├── 💻 code/                        # 代码库
-│   ├── 🌐 frontend/               # 前端代码 (Vue.js)
+│   ├── 🌐 frontend-react/          # Web 前端 (React + Vite)
 │   ├── ⚙️ backend/                # 后端代码 (Go)
 │   ├── 🤖 ai_service/             # AI服务 (Python)
 │   ├── 🔬 simulation/             # 仿真服务 (Python)
 │   ├── 📦 shared/                 # 共享资源
-│   ├── 🚀 deployment/             # 部署配置
+│   ├── 🚀 deployment/             # 部署配置（历史/备用）
 │   └── 📜 scripts/                # 构建脚本
+│
+├── 📱 mini-app-expo/               # 移动端（Expo，可选）
 │
 ├── 🎓 academic/                    # 学术材料
 │   ├── 📖 thesis/                 # 毕业论文
@@ -101,7 +112,7 @@ education-project/
 ```bash
 # 1. 克隆项目
 git clone <repository-url>
-cd education-project
+cd <repository-dir>
 
 # 2. 配置环境变量
 cp code/.env.example code/.env
@@ -109,7 +120,8 @@ cp code/.env.example code/.env
 
 # 3. 启动所有服务
 cd code
-docker-compose up -d
+docker compose up -d --build
+# 或：docker-compose up -d --build
 
 # 4. 验证服务状态
 curl http://localhost:8080/healthz  # 后端服务
@@ -128,7 +140,7 @@ go run cmd/server/main.go
 
 #### 前端开发
 ```bash
-cd code/frontend
+cd code/frontend-react
 npm install
 npm run dev
 ```
@@ -167,7 +179,23 @@ BACKEND_CORS_ORIGINS=http://localhost:5173
 # AI服务配置
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_API_KEY=your_api_key
-LLM_MODEL=gpt-3.5-turbo
+LLM_MODEL=qwen-plus
+
+# GraphRAG 配置（可选，本地知识库）
+GRAPH_RAG_ENABLED=false
+GRAPH_RAG_INDEX_PATH=app/data/graphrag_index.json
+GRAPH_RAG_SEED_TOP_K=4
+GRAPH_RAG_EXPAND_HOPS=1
+GRAPH_RAG_FINAL_TOP_K=8
+GRAPH_RAG_MAX_CONTEXT_CHARS=4000
+
+# MinIO 配置（可选，用于文件上传/资源存储）
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
+MINIO_BUCKET=emfield-uploads
+MINIO_USE_SSL=false
+MINIO_SIGNED_URL_EXPIRY=168h
 
 # 企业微信配置（可选）
 WECOM_CORPID=your_corp_id
@@ -251,4 +279,3 @@ WECOM_SECRET=your_secret
 ---
 
 **快速链接**: [代码库](code/) | [学术材料](academic/) | [技术文档](docs/) | [静态资源](assets/) | [更新日志](CHANGELOG.md)
-
