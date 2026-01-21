@@ -9,7 +9,7 @@
 - NumPy (数值计算)
 - SciPy (科学计算)
 - Matplotlib (可视化)
-- FEniCS (有限元分析)
+- SymPy (符号计算，按需使用)
 
 ## 开发环境
 
@@ -46,17 +46,16 @@ app/
 - 静电场数值仿真
 - 静磁场数值仿真
 - 电磁波传播仿真
-- 拉普拉斯方程求解
+- 拉普拉斯方程求解（演示接口）
 - 数值积分和微分
+- 可选：安全沙箱代码执行（教学演示）
 
 ## 仿真算法
 
-- 有限差分法 (FDM)
-- 有限元法 (FEM)
-- 边界元法 (BEM)
-- 蒙特卡罗方法
+- 有限差分/数值迭代（示例为主）
+- 数值积分与差分工具
 
 ## 相关文档
 
-- [仿真算法说明](../../docs/architecture/simulation.md)
-- [API文档](../../docs/api/simulation.md)
+- [API 文档](../../docs/api/simulation-services.md)
+- [组件设计](../../docs/architecture/component-design.md)

@@ -1,14 +1,15 @@
 # AI服务 (AI Service)
 
-基于 Python 的 AI 服务，提供智能问答和知识图谱功能。
+基于 Python 的 AI 服务，提供智能问答能力；支持对接 OpenAI-compatible 接口，并可选启用 GraphRAG 本地知识库检索。
 
 ## 技术栈
 
 - Python 3.9+
 - FastAPI (Web框架)
-- LangChain (LLM框架)
-- NetworkX (图数据库)
-- OpenAI API (大语言模型)
+- Uvicorn (ASGI Server)
+- httpx (调用上游 LLM 接口)
+- FAISS (向量检索，按需使用)
+- pytest (测试)
 
 ## 开发环境
 
@@ -39,18 +40,20 @@ app/
 
 ## 主要功能
 
-- 基于RAG的智能问答
-- 知识图谱构建和查询
-- 文档向量化和检索
-- 多轮对话管理
+- 智能问答（支持流式输出）
+- GraphRAG（可选）：知识库检索增强
+- 多种对话模式与系统提示模板
 
 ## 配置说明
 
 需要设置以下环境变量：
-- `OPENAI_API_KEY`: OpenAI API密钥
-- `OPENAI_BASE_URL`: API基础URL（可选）
+- `LLM_BASE_URL`: OpenAI-compatible Base URL（如 OpenAI/DashScope/Ollama 等）
+- `LLM_API_KEY`: API Key（本地模型可填占位值）
+- `LLM_MODEL`: 模型名（如 `qwen-plus`）
+- `GRAPH_RAG_ENABLED`: 是否启用 GraphRAG（`true/false`）
+- `GRAPH_RAG_INDEX_PATH`: GraphRAG 索引文件路径
 
 ## 相关文档
 
-- [GraphRAG设计](../../docs/architecture/graphrag.md)
-- [API文档](../../docs/api/ai-services.md)
+- [GraphRAG 用法](../../docs/ai/graph-rag.md)
+- [API 文档](../../docs/api/ai-services.md)

@@ -66,6 +66,7 @@ interface AuthContextValue {
     status: AuthStatus;
     error: string | null;
     login: (username: string, password: string) => Promise<void>;
+    wecomLogin: (code: string) => Promise<void>;
     logout: () => void;
     hasPermission: (permission: string) => boolean;
 }
@@ -109,6 +110,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+    const wecomLogin = useCallback(async (code: string) => {
+        dispatch({ type: 'LOGIN_START' });
+        try {
+            const user = await authApi.wecomLogin(code);
+            dispatch({ type: 'LOGIN_SUCCESS', user });
+        } catch (error) {
+            dispatch({
+                type: 'LOGIN_FAIL',
+                error: error instanceof Error ? error.message : 'WeChat Work login failed',
+            });
+            throw error;
+        }
+    }, []);
+
     const logout = useCallback(() => {
         authApi.logout();
         dispatch({ type: 'LOGOUT' });
@@ -128,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 status: state.status,
                 error: state.error,
                 login,
+                wecomLogin,
                 logout,
                 hasPermission,
             }}

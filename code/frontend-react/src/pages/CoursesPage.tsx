@@ -53,7 +53,7 @@ export function CoursesPage() {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
                         >
                             <User className="w-4 h-4" />
-                            <span>{user?.name} ({user?.role})</span>
+                            <span className="hidden sm:inline">{user?.name} ({user?.role})</span>
                         </Link>
                         <button
                             onClick={logout}

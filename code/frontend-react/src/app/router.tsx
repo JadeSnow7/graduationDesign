@@ -17,6 +17,7 @@ import { QuizzesPage } from '@/pages/QuizzesPage';
 import { QuizDetailPage } from '@/pages/QuizDetailPage';
 import { ChaptersPage } from '@/pages/ChaptersPage';
 import { ChapterContentPage } from '@/pages/ChapterContentPage';
+import WeComCallbackPage from '@/pages/WeComCallbackPage';
 
 export function AppRouter() {
     return (
@@ -25,6 +26,7 @@ export function AppRouter() {
                 <Routes>
                     {/* Public routes */}
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/auth/wecom/callback" element={<WeComCallbackPage />} />
 
                     {/* Protected routes */}
                     <Route element={<ProtectedRoute />}>

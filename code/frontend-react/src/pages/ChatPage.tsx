@@ -35,13 +35,41 @@ export function ChatPage() {
 
     const isStreaming = status === 'streaming';
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     return (
-        <div className="h-screen flex">
+        <div className="h-screen flex flex-col md:flex-row relative">
+            {/* Mobile Header Toggle */}
+            <div className="md:hidden flex items-center justify-between px-4 h-14 bg-gray-900 border-b border-gray-800 shrink-0">
+                <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="p-2 -ml-2 text-gray-400 hover:text-white"
+                >
+                    <MessageSquare className="w-6 h-6" />
+                </button>
+                <span className="font-semibold text-white">AI 智能答疑</span>
+                <div className="w-8" /> {/* Spacer */}
+            </div>
+
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 z-30 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* History Sidebar */}
-            <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+            <div className={clsx(
+                "fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 border-r border-gray-800 flex flex-col transition-transform duration-300 md:translate-x-0 md:static",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
                 <div className="p-4 border-b border-gray-800">
                     <button
-                        onClick={() => newConversation()}
+                        onClick={() => {
+                            newConversation();
+                            setIsSidebarOpen(false);
+                        }}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-medium"
                     >
                         <Plus className="w-4 h-4" />
@@ -64,7 +92,10 @@ export function ChatPage() {
                                             ? 'bg-blue-600/20 text-blue-300'
                                             : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                                     )}
-                                    onClick={() => selectConversation(conv.id)}
+                                    onClick={() => {
+                                        selectConversation(conv.id);
+                                        setIsSidebarOpen(false);
+                                    }}
                                 >
                                     <MessageSquare className="w-4 h-4 flex-shrink-0" />
                                     <span className="flex-1 text-sm truncate">{conv.title}</span>

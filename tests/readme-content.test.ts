@@ -48,7 +48,7 @@ describe('README Content Completeness', () => {
     expect(readmeContent, 'README should contain system architecture diagram').toContain('系统架构图')
     
     // Verify technology stack table exists
-    const techStackKeywords = ['Vue.js', 'Go', 'Python', 'FastAPI', 'MySQL', 'Docker']
+    const techStackKeywords = ['React', 'Go', 'Python', 'FastAPI', 'MySQL', 'Docker']
     for (const tech of techStackKeywords) {
       expect(readmeContent, `README should mention ${tech} in technology stack`).toContain(tech)
     }
@@ -192,7 +192,7 @@ describe('README Content Completeness', () => {
     
     // Verify key subdirectories are shown
     const keySubdirectories = [
-      'frontend/',
+      'frontend-react/',
       'backend/', 
       'ai_service/',
       'simulation/',

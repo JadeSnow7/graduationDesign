@@ -1,15 +1,16 @@
-# 后端代码 (Backend)
+# 后端服务 (Backend)
 
-基于 Go 语言的后端服务，提供 RESTful API 和业务逻辑处理。
+基于 Go 的后端服务，提供 RESTful API、认证鉴权与核心教学业务能力，并聚合 AI/仿真等外部服务。
 
 ## 技术栈
 
-- Go 1.21+
+- Go 1.24+
 - Gin (Web框架)
 - GORM (ORM)
-- PostgreSQL (数据库)
-- Redis (缓存)
+- MySQL (数据库)
 - JWT (身份认证)
+- RBAC (权限控制)
+- MinIO (对象存储，可选：用于作业/资源上传)
 
 ## 开发环境
 
@@ -28,7 +29,7 @@ go build -o bin/server cmd/server/main.go
 
 ```
 internal/
-├── auth/          # 身份认证
+├── auth/          # 身份认证/密码哈希
 ├── authz/         # 权限控制
 ├── clients/       # 外部服务客户端
 ├── config/        # 配置管理
@@ -47,18 +48,19 @@ internal/
 - 企业微信集成
 - AI服务代理
 - 仿真服务代理
+- 文件上传与资源管理（可选：MinIO）
 
-## 数据库迁移
+## 数据库与种子数据
 
-```bash
-# 运行迁移
-go run cmd/migrate/main.go up
+服务启动时会自动执行 GORM `AutoMigrate`；首次启动会创建演示账号：
 
-# 回滚迁移
-go run cmd/migrate/main.go down
-```
+| 角色 | 用户名 | 密码 |
+|------|--------|------|
+| 管理员 | admin | admin123 |
+| 教师 | teacher | teacher123 |
+| 学生 | student | student123 |
 
 ## 相关文档
 
-- [API文档](../../docs/api/)
-- [数据库设计](../../docs/architecture/database.md)
+- [API 文档](../../docs/api/)
+- [系统架构总览](../../docs/architecture/system-overview.md)

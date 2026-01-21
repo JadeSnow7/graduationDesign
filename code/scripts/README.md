@@ -57,7 +57,7 @@
 # 启动监控服务
 ./scripts/monitoring-up.sh
 
-# 访问 Grafana: http://localhost:3000
+# 访问 Grafana: http://localhost:3001
 # 访问 Prometheus: http://localhost:9090
 
 # 停止监控服务
@@ -90,9 +90,4 @@
 ## 相关文档
 
 - [部署指南](../../docs/deployment/)
-- [开发环境搭建](../../docs/development/setup.md)
-
-## 相关文档
-
-- [部署指南](../../docs/deployment/)
-- [开发环境搭建](../../docs/development/setup.md)
+- [开发文档](../../docs/development/README.md)

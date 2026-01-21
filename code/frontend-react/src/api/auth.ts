@@ -47,6 +47,20 @@ export const authApi = {
         return user;
     },
 
+    async wecomLogin(code: string): Promise<User> {
+        // Clear any existing token
+        authStore.clearToken();
+
+        const response = await apiClient.post<LoginResponse>('/auth/wecom', { code });
+        const data = response.data;
+        authStore.setToken(data.access_token);
+
+        const user = authStore.getUser();
+        if (!user) throw new Error('Invalid token received from WeChat Work');
+
+        return user;
+    },
+
     logout() {
         authStore.clearToken();
     }
