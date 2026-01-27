@@ -182,13 +182,16 @@ var RolePermissions = map[string][]string{
 ```json
 // GET /courses/:id/attendance/summary
 {
-  "attendance_rate": 0.92,
-  "sessions_count": 15,
-  "last_session_at": "2026-01-03T08:00:00Z",
-  "active_session": {
-    "id": 101,
-    "code": "382916",
-    "ends_at": "2026-01-04T09:15:00Z"
+  "success": true,
+  "data": {
+    "attendance_rate": 0.92,
+    "sessions_count": 15,
+    "last_session_at": "2026-01-03T08:00:00Z",
+    "active_session": {
+      "id": 101,
+      "code": "382916",
+      "ends_at": "2026-01-04T09:15:00Z"
+    }
   }
 }
 
@@ -197,13 +200,17 @@ var RolePermissions = map[string][]string{
 // Response:
 {
   "success": true,
-  "checked_in_at": "2026-01-04T09:02:33Z"
+  "data": {
+    "checked_in_at": "2026-01-04T09:02:33Z"
+  }
 }
 // 或已签到:
 {
   "success": true,
-  "already_checked_in": true,
-  "checked_in_at": "2026-01-04T09:01:15Z"
+  "data": {
+    "already_checked_in": true,
+    "checked_in_at": "2026-01-04T09:01:15Z"
+  }
 }
 ```
 
@@ -220,18 +227,21 @@ var RolePermissions = map[string][]string{
 
 ```json
 // GET /courses/:id/assignments?with_stats=1
-[
-  {
-    "id": 5,
-    "title": "第三章习题",
-    "due_at": "2026-01-10T23:59:59Z",
-    "stats": {
-      "total_students": 45,
-      "submitted_count": 38,
-      "graded_count": 20
+{
+  "success": true,
+  "data": [
+    {
+      "id": 5,
+      "title": "第三章习题",
+      "due_at": "2026-01-10T23:59:59Z",
+      "stats": {
+        "total_students": 45,
+        "submitted_count": 38,
+        "graded_count": 20
+      }
     }
-  }
-]
+  ]
+}
 
 // GET /assignments/:id/submissions?include=student&status=missing&page=1&limit=20
 {

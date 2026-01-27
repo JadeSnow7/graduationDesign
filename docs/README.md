@@ -11,6 +11,7 @@
 | ⭐ [project-design-document.md](./architecture/project-design-document.md) | **项目设计文档（主文档）**：背景 → 目标 → 需求 → 方案调研 → 架构设计 → 关键决策 → 性能 → 风险 → 验证 |
 | [requirements.md](./requirements.md) | 需求规格说明书（SRS）：详细功能与非功能需求 |
 | [frontend-api-architecture-interaction.md](./frontend-api-architecture-interaction.md) | 前端、API、架构交互综合速览 |
+| [feature-modules.md](./feature-modules.md) | 功能模块化与课程开放策略 |
 
 ---
 
@@ -21,6 +22,11 @@
 - [系统架构总览](./architecture/system-overview.md)
 - [组件设计](./architecture/component-design.md)
 - [前端分层架构](./architecture/react-layered-architecture.md)
+- [课程模块门控方案](./architecture/module-gating-plan.md)
+- [API 一致性与组件化改造计划](./architecture/api-alignment-plan.md)
+- [API 模块归属与鉴权矩阵](./architecture/api-permission-matrix.md)
+- [Shared Types & SDK 结构草案](./architecture/shared-sdk-structure.md)
+- [功能模块化与课程开放策略](./feature-modules.md)
 
 ### 🧩 [规格与计划](./specs/)
 - [Mini App 技术选型建议](./specs/mini-app-selection.md)

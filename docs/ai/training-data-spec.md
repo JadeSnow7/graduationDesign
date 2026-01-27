@@ -1,6 +1,6 @@
 # 训练数据规范
 
-本文档定义了用于后训练（Post-Training）的数据格式标准与收集流程，目标是构建高质量的《电磁场》课程教学微调数据集。
+本文档定义了用于后训练（Post-Training）的数据格式标准与收集流程，目标是构建高质量的课程教学微调数据集。
 
 ---
 
@@ -15,7 +15,7 @@
   "id": "sample-0001",
   "mode": "tutor",
   "messages": [
-    {"role": "system", "content": "你是高校《电磁场》课程助教..."},
+    {"role": "system", "content": "你是高校课程助教..."},
     {"role": "user", "content": "用户问题"},
     {"role": "assistant", "content": "助教回答"}
   ],
@@ -62,15 +62,15 @@
   "messages": [
     {
       "role": "system",
-      "content": "你是高校《电磁场》课程助教。请按以下结构回答：\n### 结论\n### 推导\n### 检查（单位/边界条件/极限情况）"
+      "content": "你是高校课程助教。请按以下结构回答：\n### 结论\n### 推导\n### 检查（单位/边界条件/极限情况）"
     },
     {
       "role": "user",
-      "content": "什么是电磁场的边界条件？"
+      "content": "什么是课程中的边界条件概念？"
     },
     {
       "role": "assistant",
-      "content": "### 结论\n电磁场边界条件描述了电场和磁场在两种不同介质分界面上的连续性关系。\n\n### 推导\n根据 Maxwell 方程组的积分形式...\n\n### 检查（单位/边界条件/极限情况）\n- 单位：E 的单位为 V/m，H 的单位为 A/m\n- 边界条件：当介质 2 为理想导体时，E₂ = 0"
+      "content": "### 结论\n边界条件描述了两种介质分界面上物理量的连续性关系。\n\n### 推导\n根据课程相关基本方程的积分形式...\n\n### 检查（单位/边界条件/极限情况）\n- 单位：注意量纲一致\n- 边界条件：说明适用场景与例外情况"
     }
   ],
   "meta": {"source": "lecture", "chapter": "ch2", "difficulty": "medium"}
@@ -110,7 +110,7 @@
   "messages": [
     {
       "role": "system",
-      "content": "你是电磁场课程助教，可以调用以下工具进行计算..."
+      "content": "你是课程助教，可以调用以下工具进行计算..."
     },
     {
       "role": "user",
@@ -160,7 +160,7 @@
     },
     {
       "role": "assistant",
-      "content": "### 说明\n当前检索到的片段 [1] 仅涉及静电场高斯定律，不包含平面波传播相关内容。\n\n### 需要补充的信息\n- 介质中的波动方程\n- 相速度与材料参数的关系\n\n建议查阅教材第5章\"电磁波传播\"相关内容。"
+      "content": "### 说明\n当前检索到的片段 [1] 仅涉及概念 A，不包含概念 B 的相关内容。\n\n### 需要补充的信息\n- 关键定义/定理\n- 参数关系与适用条件\n\n建议查阅教材相应章节。"
     }
   ],
   "meta": {"source": "synthetic", "has_rag_context": true}
@@ -176,15 +176,15 @@
   "messages": [
     {
       "role": "system",
-      "content": "[1] 良导体中电磁波衰减很快，趋肤深度极小（来源：教材5.2节）\n[2] 在低频情况下，电磁波可穿透较厚的金属层（来源：讲义补充材料）"
+      "content": "[1] 片段一的结论（来源：教材第 X 节）\n[2] 片段二的结论（来源：讲义补充材料）"
     },
     {
       "role": "user",
-      "content": "电磁波能否穿透金属？"
+      "content": "概念 B 在不同条件下是否成立？"
     },
     {
       "role": "assistant",
-      "content": "### 结论\n这取决于频率和金属厚度。\n\n### 分析\n- [1] 描述的是高频情况：趋肤深度很小，电磁波快速衰减\n- [2] 描述的是低频情况：趋肤深度较大，电磁波可穿透\n\n### 适用条件\n- 高频（GHz）：趋肤深度约微米级，难以穿透\n- 低频（kHz）：趋肤深度可达毫米级，薄金属层可穿透"
+      "content": "### 结论\n这取决于条件参数。\n\n### 分析\n- [1] 描述的是条件 A\n- [2] 描述的是条件 B\n\n### 适用条件\n- 条件 A：限制说明\n- 条件 B：限制说明"
     }
   ],
   "meta": {"source": "synthetic", "difficulty": "hard"}
@@ -266,3 +266,19 @@ data/training/
 └── eval/                  # 评估基准集
     └── benchmark.jsonl    # 固定测试集（50-100 条）
 ```
+
+补充：训练脚本位于 `scripts/ai/` 与 `code/ai_service/training/`，默认读取上述目录中的 `processed/*.jsonl` 与 `eval/benchmark.jsonl`。
+
+### 数据准备工具
+
+使用 `prepare_training_data.py` 初始化目录结构和生成示例数据：
+
+```bash
+# 创建目录结构和示例数据
+python3 code/ai_service/training/prepare_training_data.py --create-dirs --create-samples
+
+# 验证现有数据格式
+python3 code/ai_service/training/prepare_training_data.py --validate
+```
+
+评测脚本：`scripts/ai/eval_metrics.py`，用于离线回归评测。

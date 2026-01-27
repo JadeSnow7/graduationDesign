@@ -32,10 +32,10 @@
     "courses": [
       {
         "id": "1",
-        "name": "电磁场理论",
-        "code": "EMF101",
+        "name": "课程示例",
+        "code": "COURSE101",
         "semester": "2025-2026-1",
-        "description": "电磁场基础理论课程",
+        "description": "通用课程示例描述",
         "teacher_id": "2",
         "teacher_name": "张教授",
         "student_count": 45,
@@ -68,10 +68,10 @@
   "success": true,
   "data": {
     "id": "1",
-    "name": "电磁场理论",
-    "code": "EMF101",
+    "name": "课程示例",
+    "code": "COURSE101",
     "semester": "2025-2026-1",
-    "description": "电磁场基础理论课程，包含静电场、静磁场、电磁波等内容",
+    "description": "通用课程示例描述",
     "teacher_id": "2",
     "teacher_name": "张教授",
     "assistants": [
@@ -108,10 +108,10 @@
 **请求参数**:
 ```json
 {
-  "name": "电磁场理论",
-  "code": "EMF101",
+  "name": "课程示例",
+  "code": "COURSE101",
   "semester": "2025-2026-1",
-  "description": "电磁场基础理论课程",
+  "description": "通用课程示例描述",
   "syllabus": "课程大纲内容...",
   "max_students": 50
 }
@@ -123,16 +123,15 @@
   "success": true,
   "data": {
     "id": "1",
-    "name": "电磁场理论",
-    "code": "EMF101",
+    "name": "课程示例",
+    "code": "COURSE101",
     "semester": "2025-2026-1",
-    "description": "电磁场基础理论课程",
+    "description": "通用课程示例描述",
     "teacher_id": "2",
     "status": "active",
     "invite_code": "ABC123",
     "created_at": "2025-12-23T10:00:00Z"
-  },
-  "message": "课程创建成功"
+  }
 }
 ```
 
@@ -150,7 +149,7 @@
 **请求参数**:
 ```json
 {
-  "name": "电磁场理论（更新）",
+  "name": "课程示例（更新）",
   "description": "更新后的课程描述",
   "syllabus": "更新后的课程大纲",
   "status": "active"
@@ -163,11 +162,10 @@
   "success": true,
   "data": {
     "id": "1",
-    "name": "电磁场理论（更新）",
+    "name": "课程示例（更新）",
     "description": "更新后的课程描述",
     "updated_at": "2025-12-23T10:30:00Z"
-  },
-  "message": "课程更新成功"
+  }
 }
 ```
 
@@ -186,7 +184,9 @@
 ```json
 {
   "success": true,
-  "message": "课程删除成功"
+  "data": {
+    "message": "课程删除成功"
+  }
 }
 ```
 
@@ -257,8 +257,7 @@
   "data": {
     "added_count": 3,
     "failed_users": []
-  },
-  "message": "成员添加成功"
+  }
 }
 ```
 
@@ -274,7 +273,9 @@
 ```json
 {
   "success": true,
-  "message": "成员移除成功"
+  "data": {
+    "message": "成员移除成功"
+  }
 }
 ```
 
@@ -299,10 +300,9 @@
   "success": true,
   "data": {
     "course_id": "1",
-    "course_name": "电磁场理论",
+    "course_name": "课程示例",
     "joined_at": "2025-12-23T10:00:00Z"
-  },
-  "message": "成功加入课程"
+  }
 }
 ```
 
@@ -367,8 +367,7 @@
     "title": "第一章习题",
     "status": "draft",
     "created_at": "2025-12-23T10:00:00Z"
-  },
-  "message": "作业创建成功"
+  }
 }
 ```
 
@@ -434,8 +433,7 @@
     "type": "document",
     "size": 2048576,
     "uploaded_at": "2025-12-23T10:00:00Z"
-  },
-  "message": "资源上传成功"
+  }
 }
 ```
 

@@ -33,7 +33,7 @@
 | `calculate_derivative` | 符号/数值微分 | `/api/v1/calc/differentiate` |
 | `evaluate_expression` | 表达式求值 | `/api/v1/calc/evaluate` |
 | `vector_operation` | 矢量运算 | `/api/v1/calc/vector_op` |
-| `run_simulation` | 电磁场仿真 | `/api/v1/sim/*` |
+| `run_simulation` | 课程仿真 | `/api/v1/sim/*` |
 
 ### 2.2 工具定义（对应 `tools.py`）
 
@@ -64,7 +64,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "run_simulation",
-            "description": "运行电磁场数值仿真",
+            "description": "运行课程数值仿真",
             "parameters": {
                 "type": "object",
                 "properties": {

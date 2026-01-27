@@ -1,0 +1,1831 @@
+openapi: 3.0.3
+info:
+  title: classPlatform API (Target Contract)
+  version: 1.1.0
+  description: |
+    统一契约目标态（Web/Mobile/AI 共用）。
+    - 以 /api/v1 为统一前缀
+    - 响应推荐使用统一 envelope：{ success, data, error }
+    - 部分旧接口可在迁移期保留别名，但本文件仅描述目标态
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: ERROR_CODE
+        message:
+          type: string
+          example: 错误说明
+        details:
+          type: object
+          additionalProperties: true
+      required: [message]
+
+    ApiEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          additionalProperties: true
+          description: 业务数据
+        error:
+          $ref: '#/components/schemas/ApiError'
+      required: [success]
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+        user_id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+      required: [access_token, token_type]
+
+    LoginEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ApiEnvelope'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/LoginResponse'
+
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required: [id, username, role]
+
+    Course:
+      type: object
+      properties:
+        ID:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        semester:
+          type: string
+        teacher_id:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required: [ID, name, teacher_id]
+
+    Chapter:
+      type: object
+      description: 目标态章节模型（包含内容字段，便于移动端与 Web 统一）
+      properties:
+        ID:
+          type: integer
+        course_id:
+          type: integer
+        title:
+          type: string
+        summary:
+          type: string
+        knowledge_points:
+          type: string
+          description: JSON 字符串（数组）
+        content:
+          type: string
+          description: 章节正文（目标态字段）
+        order_num:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required: [ID, course_id, title]
+
+    Assignment:
+      type: object
+      properties:
+        ID:
+          type: integer
+        course_id:
+          type: integer
+        chapter_id:
+          type: integer
+          nullable: true
+        teacher_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+        allow_file:
+          type: boolean
+        max_file_size:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required: [ID, course_id, teacher_id, title]
+
+    AssignmentSubmission:
+      type: object
+      properties:
+        ID:
+          type: integer
+        assignment_id:
+          type: integer
+        student_id:
+          type: integer
+        content:
+          type: string
+        file_url:
+          type: string
+          nullable: true
+        grade:
+          type: integer
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+        graded_by:
+          type: integer
+          nullable: true
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+
+    Resource:
+      type: object
+      properties:
+        ID:
+          type: integer
+        course_id:
+          type: integer
+        chapter_id:
+          type: integer
+          nullable: true
+        created_by_id:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [video, paper, link]
+        url:
+          type: string
+        description:
+          type: string
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required: [ID, course_id, created_by_id, title, type, url]
+
+    CreateResourceRequest:
+      type: object
+      properties:
+        course_id: { type: integer }
+        title: { type: string }
+        type: { type: string, enum: [video, paper, link] }
+        url: { type: string }
+        description: { type: string }
+      required: [course_id, title, type, url]
+
+    CreateAssignmentRequest:
+      type: object
+      properties:
+        course_id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        deadline: { type: string, format: date-time }
+        allow_file: { type: boolean }
+      required: [course_id, title]
+
+    SubmitAssignmentRequest:
+      type: object
+      properties:
+        content: { type: string }
+        file_url: { type: string }
+
+    GradeSubmissionRequest:
+      type: object
+      properties:
+        grade: { type: integer }
+        feedback: { type: string }
+      required: [grade]
+
+    CreateQuizRequest:
+      type: object
+      properties:
+        course_id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        time_limit: { type: integer }
+        start_time: { type: string, format: date-time }
+        end_time: { type: string, format: date-time }
+        max_attempts: { type: integer }
+        show_answer_after_end: { type: boolean }
+      required: [course_id, title]
+
+    CreateQuestionRequest:
+      type: object
+      properties:
+        type: { type: string, enum: [single_choice, multiple_choice, true_false, fill_blank] }
+        content: { type: string }
+        options:
+          type: array
+          items: { type: string }
+        answer: { type: string }
+        match_rule: { type: string }
+        points: { type: integer }
+        order_num: { type: integer }
+      required: [type, content, answer]
+
+    SubmitQuizRequest:
+      type: object
+      properties:
+        answers:
+          type: object
+          additionalProperties: true
+
+    Announcement:
+      type: object
+      properties:
+        ID: { type: integer }
+        course_id: { type: integer }
+        title: { type: string }
+        content: { type: string }
+        created_by_id: { type: integer }
+        CreatedAt: { type: string, format: date-time }
+
+    AttendanceSession:
+      type: object
+      properties:
+        ID: { type: integer }
+        course_id: { type: integer }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        timeout_minutes: { type: integer }
+        code: { type: string }
+        is_active: { type: boolean }
+
+    LearningProfile:
+      type: object
+      properties:
+        student_id: { type: integer }
+        course_id: { type: integer }
+        weak_points: { type: string }
+        completed_topics: { type: string }
+        total_sessions: { type: integer }
+        total_study_minutes: { type: integer }
+        last_session_at: { type: string, format: date-time }
+        recommended_topics: { type: string }
+
+    GlobalProfile:
+      type: object
+      properties:
+        student_id: { type: integer }
+        global_competencies: { type: string }
+        total_study_hours: { type: integer }
+        learning_style: { type: string }
+        updated_at: { type: string, format: date-time }
+
+    LearningEvent:
+      type: object
+      properties:
+        id: { type: integer }
+        student_id: { type: integer }
+        course_id: { type: integer }
+        event_type: { type: string }
+        payload: { type: string }
+        created_at: { type: string, format: date-time }
+
+    AdminUser:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role: { type: string }
+        name: { type: string }
+
+    Quiz:
+      type: object
+      properties:
+        ID:
+          type: integer
+        course_id:
+          type: integer
+        chapter_id:
+          type: integer
+          nullable: true
+        created_by_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        time_limit:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        max_attempts:
+          type: integer
+        show_answer_after_end:
+          type: boolean
+        is_published:
+          type: boolean
+        total_points:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required: [ID, course_id, created_by_id, title]
+
+    Question:
+      type: object
+      properties:
+        ID:
+          type: integer
+        quiz_id:
+          type: integer
+        type:
+          type: string
+          enum: [single_choice, multiple_choice, true_false, fill_blank]
+        content:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        match_rule:
+          type: string
+        points:
+          type: integer
+        order_num:
+          type: integer
+
+    QuizAttempt:
+      type: object
+      properties:
+        ID:
+          type: integer
+        quiz_id:
+          type: integer
+        student_id:
+          type: integer
+        attempt_number:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        deadline:
+          type: string
+          format: date-time
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        answers:
+          type: string
+        score:
+          type: integer
+          nullable: true
+        max_score:
+          type: integer
+
+    ChatMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+        content:
+          type: string
+      required: [role, content]
+
+    ChatRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          example: tutor
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        stream:
+          type: boolean
+          default: false
+      required: [messages]
+
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        model:
+          type: string
+          nullable: true
+      required: [reply]
+
+    ChatWithToolsRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        enable_tools:
+          type: boolean
+        max_tool_calls:
+          type: integer
+        context:
+          type: object
+          additionalProperties: true
+      required: [messages]
+
+    ChatWithToolsResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        model:
+          type: string
+          nullable: true
+        tool_calls:
+          type: array
+          items:
+            type: object
+        tool_results:
+          type: array
+          items:
+            type: object
+      required: [reply]
+
+    GuidedChatRequest:
+      type: object
+      properties:
+        session_id:
+          type: string
+        topic:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        course_id:
+          type: string
+      required: [messages]
+
+    GuidedChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        session_id:
+          type: string
+        current_step:
+          type: integer
+        total_steps:
+          type: integer
+        progress_percentage:
+          type: number
+      required: [reply]
+
+    WritingSubmission:
+      type: object
+      properties:
+        ID:
+          type: integer
+        student_id:
+          type: integer
+        course_id:
+          type: integer
+        assignment_id:
+          type: integer
+          nullable: true
+        writing_type:
+          type: string
+          enum: [literature_review, course_paper, thesis, abstract]
+        title:
+          type: string
+        content:
+          type: string
+        word_count:
+          type: integer
+        feedback_json:
+          type: string
+          nullable: true
+        dimension_json:
+          type: string
+          nullable: true
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+
+    UserStatsStudent:
+      type: object
+      properties:
+        courses_count:
+          type: integer
+        assignments_total:
+          type: integer
+        assignments_submitted:
+          type: integer
+        quizzes_taken:
+          type: integer
+        quizzes_avg_score:
+          type: number
+        pending_count:
+          type: integer
+        pending:
+          type: array
+          items:
+            type: object
+        recent_activity:
+          type: array
+          items:
+            type: object
+
+    UserStatsTeacher:
+      type: object
+      properties:
+        courses_created:
+          type: integer
+        assignments_created:
+          type: integer
+        quizzes_created:
+          type: integer
+        pending_grades:
+          type: integer
+        recent_submissions:
+          type: array
+          items:
+            type: object
+
+    UserStats:
+      oneOf:
+        - $ref: '#/components/schemas/UserStatsStudent'
+        - $ref: '#/components/schemas/UserStatsTeacher'
+
+paths:
+  /auth/login:
+    post:
+      summary: 用户登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginEnvelope'
+        '401': { description: 未认证 }
+
+  /auth/me:
+    get:
+      summary: 获取当前用户信息
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+
+  /auth/wecom:
+    post:
+      summary: 企业微信登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: 成功 }
+
+  /auth/wecom/jsconfig:
+    post:
+      summary: 企业微信 JS SDK 配置
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: 成功 }
+
+  /auth/wecom/oauth-url:
+    get:
+      summary: 获取 OAuth 地址
+      security: []
+      responses:
+        '200': { description: 成功 }
+
+  /courses:
+    get:
+      summary: 课程列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+    post:
+      summary: 创建课程
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                code: { type: string }
+                semester: { type: string }
+              required: [name]
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+
+  /courses/{courseId}:
+    get:
+      summary: 课程详情
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+
+  /courses/{courseId}/chapters:
+    get:
+      summary: 章节列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chapter'
+
+  /chapters:
+    post:
+      summary: 创建章节
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                course_id: { type: integer }
+                title: { type: string }
+                order_num: { type: integer }
+                summary: { type: string }
+                knowledge_points: { type: string }
+                content: { type: string }
+              required: [course_id, title]
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chapter'
+
+  /chapters/{id}:
+    get:
+      summary: 章节详情
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chapter'
+    put:
+      summary: 更新章节
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                order_num: { type: integer }
+                summary: { type: string }
+                knowledge_points: { type: string }
+                content: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chapter'
+    delete:
+      summary: 删除章节
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 删除成功
+
+  /chapters/{id}/heartbeat:
+    post:
+      summary: 学习时长心跳
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  duration: { type: integer }
+
+  /chapters/{id}/my-stats:
+    get:
+      summary: 我的章节统计
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { type: object }
+
+  /chapters/{id}/class-stats:
+    get:
+      summary: 班级章节统计
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { type: object }
+
+  /courses/{courseId}/assignments:
+    get:
+      summary: 作业列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+    post:
+      summary: 创建作业
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssignmentRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+
+  /assignments/{id}:
+    get:
+      summary: 作业详情
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+
+  /assignments/{id}/submit:
+    post:
+      summary: 提交作业
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAssignmentRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmission'
+
+  /assignments/{id}/submissions:
+    get:
+      summary: 作业提交列表（教师）
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentSubmission'
+
+  /submissions/{submissionId}/grade:
+    post:
+      summary: 批改作业
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeSubmissionRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmission'
+
+  /courses/{courseId}/resources:
+    get:
+      summary: 资源列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: type
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+
+  /resources:
+    post:
+      summary: 创建资源
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResourceRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+  /resources/{id}:
+    delete:
+      summary: 删除资源
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 删除成功 }
+
+  /courses/{courseId}/quizzes:
+    get:
+      summary: 测验列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quiz'
+
+  /quizzes:
+    post:
+      summary: 创建测验
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuizRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+
+  /quizzes/{id}:
+    get:
+      summary: 测验详情
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quiz: { $ref: '#/components/schemas/Quiz' }
+                  questions:
+                    type: array
+                    items: { $ref: '#/components/schemas/Question' }
+    put:
+      summary: 更新测验
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Quiz' }
+    delete:
+      summary: 删除测验
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 删除成功 }
+
+  /quizzes/{id}/start:
+    post:
+      summary: 开始测验
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempt: { $ref: '#/components/schemas/QuizAttempt' }
+                  questions:
+                    type: array
+                    items: { $ref: '#/components/schemas/Question' }
+                  resumed:
+                    type: boolean
+
+  /quizzes/{id}/submit:
+    post:
+      summary: 提交测验
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitQuizRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score: { type: integer }
+                  max_score: { type: integer }
+                  attempt: { $ref: '#/components/schemas/QuizAttempt' }
+
+  /quizzes/{id}/result:
+    get:
+      summary: 测验结果
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quiz: { $ref: '#/components/schemas/Quiz' }
+                  attempts:
+                    type: array
+                    items: { $ref: '#/components/schemas/QuizAttempt' }
+
+  /ai/chat:
+    post:
+      summary: AI 对话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatResponse' }
+
+  /ai/chat_with_tools:
+    post:
+      summary: AI 对话（工具调用）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatWithToolsRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatWithToolsResponse' }
+
+  /ai/chat/guided:
+    post:
+      summary: 引导式学习对话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GuidedChatRequest' }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GuidedChatResponse' }
+
+  /courses/{courseId}/writing:
+    post:
+      summary: 写作提交
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                content: { type: string }
+                writing_type: { type: string }
+                assignment_id: { type: integer }
+              required: [title, content, writing_type]
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WritingSubmission' }
+    get:
+      summary: 写作提交列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: writing_type
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WritingSubmission' }
+
+  /writing/{id}:
+    get:
+      summary: 写作提交详情
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WritingSubmission' }
+
+  /writing/{id}/feedback:
+    put:
+      summary: 写作反馈更新
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                feedback_json: { type: string }
+                dimension_json: { type: string }
+      responses:
+        '200': { description: 成功 }
+
+  /courses/{courseId}/assignments/stats:
+    get:
+      summary: 作业统计（课程）
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { type: object }
+
+  /assignments/{id}/my-submission:
+    get:
+      summary: 我的作业提交
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AssignmentSubmission' }
+
+  /submissions/{submissionId}/ai-grade:
+    post:
+      summary: AI 作业批改建议
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { type: object }
+
+  /quizzes/{id}/publish:
+    post:
+      summary: 发布测验
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /quizzes/{id}/unpublish:
+    post:
+      summary: 取消发布测验
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /quizzes/{id}/questions:
+    post:
+      summary: 添加题目
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuestionRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+
+  /questions/{id}:
+    put:
+      summary: 更新题目
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateQuestionRequest' }
+      responses:
+        '200': { description: 成功 }
+    delete:
+      summary: 删除题目
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /courses/{courseId}/announcements:
+    get:
+      summary: 公告列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Announcement' }
+    post:
+      summary: 发布公告
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Announcement' }
+      responses:
+        '201': { description: 创建成功 }
+
+  /courses/{courseId}/announcements/summary:
+    get:
+      summary: 公告摘要
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: object } } } }
+
+  /announcements/{id}:
+    put:
+      summary: 更新公告
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Announcement' }
+      responses:
+        '200': { description: 成功 }
+    delete:
+      summary: 删除公告
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /announcements/{id}/read:
+    post:
+      summary: 标记已读
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /courses/{courseId}/attendance/summary:
+    get:
+      summary: 考勤摘要
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: object } } } }
+
+  /courses/{courseId}/attendance/sessions:
+    get:
+      summary: 考勤场次列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AttendanceSession' }
+
+  /courses/{courseId}/attendance/start:
+    post:
+      summary: 发起考勤
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /attendance/{sessionId}/end:
+    post:
+      summary: 结束考勤
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /attendance/{sessionId}/checkin:
+    post:
+      summary: 学生签到
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /attendance/{sessionId}/records:
+    get:
+      summary: 考勤记录
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: array, items: { type: object } } } } }
+
+  /learning-profiles/{courseId}/{studentId}:
+    get:
+      summary: 学习画像（单课程）
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LearningProfile' }
+
+  /learning-profiles:
+    post:
+      summary: 保存学习画像
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LearningProfile' }
+      responses:
+        '200': { description: 成功 }
+
+  /courses/{courseId}/learning-profiles:
+    get:
+      summary: 课程学习画像列表
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LearningProfile' } } } } }
+
+  /students/{studentId}/global-profile:
+    get:
+      summary: 学生全局画像
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { $ref: '#/components/schemas/GlobalProfile' } } } }
+    post:
+      summary: 保存学生全局画像
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GlobalProfile' }
+      responses:
+        '200': { description: 成功 }
+
+  /students/{studentId}/learning-timeline:
+    get:
+      summary: 学习时间线
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LearningEvent' } } } } }
+
+  /learning-events:
+    post:
+      summary: 记录学习事件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LearningEvent' }
+      responses:
+        '200': { description: 成功 }
+
+  /upload/assignment/{assignmentId}:
+    post:
+      summary: 上传作业附件
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: 成功 }
+
+  /upload/resource/{courseId}:
+    post:
+      summary: 上传课程资源
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: 成功 }
+
+  /admin/stats:
+    get:
+      summary: 系统统计
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: object } } } }
+
+  /admin/users:
+    get:
+      summary: 用户列表
+      responses:
+        '200': { description: 成功, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/AdminUser' } } } } }
+    post:
+      summary: 创建用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminUser' }
+      responses:
+        '201': { description: 创建成功 }
+
+  /admin/users/{id}:
+    put:
+      summary: 更新用户
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminUser' }
+      responses:
+        '200': { description: 成功 }
+    delete:
+      summary: 删除用户
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: 成功 }
+
+  /user/stats:
+    get:
+      summary: 用户统计
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserStats' }
+
+  /sim/{endpoint}:
+    post:
+      summary: 仿真接口（通配）
+      parameters:
+        - in: path
+          name: endpoint
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+
+  /calc/{endpoint}:
+    post:
+      summary: 数值计算接口（通配）
+      parameters:
+        - in: path
+          name: endpoint
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }

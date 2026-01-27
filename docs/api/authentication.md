@@ -21,8 +21,10 @@
 **响应示例**:
 ```json
 {
-  "status": "ok",
-  "timestamp": "2025-12-23T10:00:00Z"
+  "success": true,
+  "data": {
+    "status": "ok"
+  }
 }
 ```
 
@@ -51,8 +53,7 @@
     "user_id": "1",
     "username": "admin",
     "role": "admin"
-  },
-  "message": "登录成功"
+  }
 }
 ```
 
@@ -147,8 +148,7 @@ Authorization: Bearer <jwt_token>
     "name": "张三",
     "wecom_user_id": "zhangsan",
     "role": "student"
-  },
-  "message": "登录成功"
+  }
 }
 ```
 
@@ -272,7 +272,11 @@ const getCurrentUser = async () => {
     },
   });
   
-  return await response.json();
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result?.error?.message || '获取用户信息失败');
+  }
+  return result.data;
 };
 ```
 
@@ -299,5 +303,8 @@ def get_current_user(token: str):
         'Authorization': f'Bearer {token}'
     })
     
-    return response.json()
+    result = response.json()
+    if not result.get('success'):
+        raise Exception(result.get('error', {}).get('message', '获取用户信息失败'))
+    return result.get('data')
 ```

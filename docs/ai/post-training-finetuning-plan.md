@@ -1,13 +1,15 @@
-# 后训练与微调计划（面向《电磁场》智能教学助手）
+# 后训练与微调计划（面向通用教学助手）
 
 本文给出一套可落地的“后训练（Post-Training）/微调（Fine-tuning）”路线，目标是让模型在本项目的多模式对话（`tutor/grader/sim_explain/formula_verify/sim_tutor/problem_solver`）、GraphRAG 引用规范、以及工具调用（数值计算/仿真）上表现更稳定、可验证、可追溯。
+
+> 说明：文档示例可替换为任意课程语料与知识包，不再绑定单一学科。
 
 ---
 
 ## 1. 目标与边界
 
 ### 1.1 目标（可验收）
-- **教学风格一致**：回答遵循“先结论→再推导→再检查/单位/边界条件”的结构，语言贴近《电磁场》课程语境。
+- **教学风格一致**：回答遵循“先结论→再推导→再检查/单位/边界条件”的结构，语言贴近课程语境。
 - **可追溯**：启用 GraphRAG（`*_rag`）时，能基于检索片段作答并正确标注引用 `[1][2]`，不编造引用。
 - **可验证**：涉及积分/微分/矢量算子/数值仿真时，能正确触发工具调用并将结果解释回到物理含义。
 - **稳健拒答**：证据不足、信息不全、超出课程范围时能明确说明并给出补充信息清单。
@@ -244,7 +246,7 @@
 
 ## 9. 论文/答辩表述建议（可选）
 
-本工作不以“扩大参数规模”为主线，而是通过后训练阶段的能力解耦与约束，将通用大模型收敛为一个**可验证、可追溯、可教学**的《电磁场》智能助教：
+本工作不以“扩大参数规模”为主线，而是通过后训练阶段的能力解耦与约束，将通用大模型收敛为一个**可验证、可追溯、可教学**的课程智能助教：
 - **Teaching-style alignment**：让回答符合课堂讲解结构与语气（阶段 B）
 - **Tool-use grounding**：关键数值/符号步骤可调用工具复现（阶段 C）
 - **RAG citation alignment**：基于证据片段作答并引用可追踪（阶段 D）
@@ -285,7 +287,7 @@ Teaching Assistant (EM Field)
 
 示例（教学风格 + 固定结构）：
 ```json
-{"id":"style-0001","mode":"tutor","messages":[{"role":"system","content":"你是高校《电磁场》课程助教...请按 ### 结论/推导/检查 输出。"},{"role":"user","content":"什么是边界条件？"},{"role":"assistant","content":"### 结论\\n...\\n\\n### 推导\\n...\\n\\n### 检查（单位/边界条件/极限情况）\\n..."}]}
+{"id":"style-0001","mode":"tutor","messages":[{"role":"system","content":"你是高校课程助教...请按 ### 结论/推导/检查 输出。"},{"role":"user","content":"什么是边界条件？"},{"role":"assistant","content":"### 结论\\n...\\n\\n### 推导\\n...\\n\\n### 检查（单位/边界条件/极限情况）\\n..."}]}
 ```
 
 示例（RAG 引用 + 不足拒答）：
@@ -412,7 +414,7 @@ data/training/eval/
 
 | 类型 | 条数 | 示例 |
 |------|------|------|
-| 概念解释 | 15 | "什么是电磁场边界条件？" |
+| 概念解释 | 15 | "什么是边界条件概念？" |
 | 公式推导 | 15 | "推导平面波反射系数公式" |
 | 数值计算 | 10 | "计算铜在 1GHz 的趋肤深度" |
 | 仿真解读 | 5 | "解释 Laplace 二维场分布图" |
@@ -423,7 +425,7 @@ data/training/eval/
 ```json
 {
   "id": "eval-0001",
-  "query": "什么是电磁场边界条件？",
+  "query": "什么是边界条件概念？",
   "type": "concept",
   "expected": {
     "key_points": ["切向连续", "法向不连续", "面电荷"],
@@ -456,3 +458,84 @@ METRICS = {
 | 关键点覆盖率 | ≥ 80% |
 | 拒答准确率 | ≥ 95% |
 | 格式合规率 | ≥ 90% |
+
+---
+
+## 13. 训练执行计划与脚本（可运行）
+
+本节补充“可直接执行”的训练计划与脚本使用说明，确保落地。
+
+### 13.1 训练前检查（必做）
+- [ ] 已生成 `data/training/processed/*.jsonl`
+- [ ] 评测集 `data/training/eval/benchmark.jsonl` 存在
+- [ ] GPU 可用（`nvidia-smi`）
+- [ ] Python 环境已安装依赖：
+  - `torch`, `transformers`, `datasets`, `peft`, `accelerate`, `bitsandbytes`
+
+环境准备详见：`docs/ai/training-environment.md`
+
+> 如未安装依赖，可用：`pip install torch transformers datasets peft accelerate bitsandbytes`
+
+### 13.2 训练脚本（LoRA/QLoRA）
+
+已提供可直接运行的脚本：
+- `scripts/ai/train_lora.py`：训练主脚本（支持 LoRA/QLoRA）
+- `scripts/ai/run_train.sh`：按阶段调用的便捷入口
+- `code/ai_service/training/train_lora.py`：训练主脚本（代码内版本）
+- `code/ai_service/training/run_train.sh`：训练入口（代码内版本）
+
+示例（阶段 B：教学风格 SFT）：
+
+```bash
+bash scripts/ai/run_train.sh style
+```
+
+示例（阶段 C：工具调用 SFT）：
+
+```bash
+bash scripts/ai/run_train.sh tool
+```
+
+示例（阶段 D：RAG 引用 SFT）：
+
+```bash
+bash scripts/ai/run_train.sh rag
+```
+
+示例（多任务合并训练）：
+
+```bash
+bash scripts/ai/run_train.sh all
+```
+
+### 13.3 关键参数建议（1×4090 24GB）
+- `--use_qlora --bf16`：默认开启 QLoRA（4-bit nf4）
+- `--max_length 2048`：可根据数据长度调到 3072/4096
+- `--per_device_train_batch_size 1`、`--gradient_accumulation_steps 8`：有效 batch=8
+- `--learning_rate 1e-4`：LoRA 常用起点
+- `--num_train_epochs 2`：先短训，再根据回归结果决定是否加到 3-4
+
+### 13.4 产物与回归
+- 产物目录：`outputs/adapter/*`
+- 每次训练后做一次回归集验证（至少 50 条），保存对比报告
+
+### 13.5 评测脚本（骨架）
+
+已提供轻量评测脚本：
+- `scripts/ai/eval_metrics.py`
+- `code/ai_service/training/eval_metrics.py`
+
+示例：
+
+```bash
+python3 scripts/ai/eval_metrics.py \
+  --eval_file data/training/eval/benchmark.jsonl \
+  --pred_file outputs/predictions.jsonl \
+  --output outputs/eval_report.json
+```
+
+`predictions.jsonl` 建议字段：
+
+```json
+{"id":"eval-0001","response":"### 结论...","citations":["ch2.3"],"tool_calls":["evaluate_expression"],"refused":false}
+```

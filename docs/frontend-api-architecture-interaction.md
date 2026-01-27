@@ -12,6 +12,8 @@
 
 ## 2. 前端任务需求（需求层）
 
+> 说明：平台已调整为通用教学平台，学科能力以“课程专属模块”形式启用。下文中的仿真/数值计算为示例模块。
+
 ### 2.1 角色与权限边界
 - 角色：管理员、教师、助教、学生（RBAC）。
 - 权限要点：`course:read`、`course:write`、`ai:use`、`sim:use`、`user:manage`。
@@ -36,10 +38,10 @@
   - 智能答疑（多轮对话、可选 GraphRAG 引用）。
   - 作业批改辅助（rubrics + 反馈）。
   - 学情总结与教学建议（教师端）。
-- 仿真与数值计算：
-  - 典型电磁模型的参数输入与可视化输出。
-  - 仿真结果的图像/图表展示与交互查看。
-  - 数值计算（积分、微分、矢量算子、公式求值）工具化入口。
+- 课程专属工具（示例：仿真/数值计算）：
+  - 课程模型的参数输入与可视化输出。
+  - 结果的图像/图表展示与交互查看。
+  - 课程工具的统一入口与权限控制。
 
 ### 2.3 非功能与体验要求
 - 客户端：企业微信内置 WebView 优先，兼容普通浏览器。
@@ -51,7 +53,7 @@
 ### 3.1 通用规范
 - 基地址：`/api/v1`；请求/响应均为 JSON。
 - 认证方式：JWT Bearer Token。
-- 统一响应结构：`{ success, data, message, timestamp }`；错误结构：`{ success: false, error: { code, message, details } }`。
+- 统一响应结构：`{ success, data }`；错误结构：`{ success: false, error: { code, message, details } }`。
 
 ### 3.2 认证接口（`docs/api/authentication.md`）
 - `GET /healthz`：健康检查。
@@ -75,7 +77,7 @@
 - 知识库：`POST /ai/search`、`POST /ai/knowledge/rebuild`
 - 模式：`tutor`/`grader`/`sim_explain`/`formula_verify`/`sim_tutor`/`problem_solver`，可加 `_rag` 启用 GraphRAG。
 
-### 3.5 仿真服务接口（`docs/api/simulation-services.md`）
+### 3.5 课程专属仿真服务接口（`docs/api/simulation-services.md`）
 - 静电场：`POST /sim/laplace2d`、`/sim/point_charges`、`/sim/gauss_flux`
 - 静磁场：`POST /sim/wire_field`、`/sim/solenoid`、`/sim/ampere_loop`
 - 电磁波：`POST /sim/wave_1d`、`/sim/fresnel`
@@ -90,14 +92,14 @@
 
 - 客户端：企业微信 H5 + 传统浏览器。
 - 前端：Vue 3 + Vite H5 应用，负责页面展示与交互。
-- 后端：Go + Gin，提供统一鉴权（JWT）、RBAC 权限、课程管理、AI/仿真网关、企微 OAuth。
+- 后端：Go + Gin，提供统一鉴权（JWT）、RBAC 权限、课程管理、AI/工具网关、企微 OAuth。
 - 能力服务：
   - AI 服务（FastAPI）：对接 LLM，支持 GraphRAG 检索与流式响应。
-  - 仿真服务（FastAPI）：数值求解与图像生成。
+  - 课程工具服务（FastAPI）：按课程提供仿真/实验/写作等能力。
 - 数据层：MySQL（业务数据）、文件存储（附件/图像）、向量索引（GraphRAG）。
 - 关键调用链：
   - AI：前端 → `/api/v1/ai/chat` → AI 服务 → 上游 LLM
-  - 仿真：前端 → `/api/v1/sim/*` 或 `/api/v1/calc/*` → 仿真服务
+- 课程工具：前端 → `/api/v1/sim/*` 或 `/api/v1/calc/*` → 课程工具服务
   - 企微登录：前端 → `/api/v1/auth/wecom/oauth-url` → 企业微信授权 → `/api/v1/auth/wecom`
 
 ## 5. 交互设计摘要（当前实现 + 需求要点）
@@ -115,10 +117,10 @@
 - 支持模式切换（讲解/批改），GraphRAG 开关。
 - 发送后追加对话记录；当前为非流式响应（SSE 仍需前端接入）。
 
-### 5.4 仿真与数值计算交互
-- 仿真页面按领域划分为 Tab：静电、静磁、电磁波、数值计算、Laplace。
+### 5.4 课程专属工具交互（示例：仿真/数值计算）
+- 工具页面按子模块划分为 Tab。
 - 参数表单 + 一键运行；结果以图片/指标卡形式返回。
-- 数值计算包含积分/微分/求值/矢量算子四个子页签。
+- 具体子模块由课程配置决定。
 
 ### 5.5 课程管理交互
 - 课程列表展示与创建入口（权限提示：教师/管理员）。

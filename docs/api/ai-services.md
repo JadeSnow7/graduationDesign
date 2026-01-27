@@ -98,7 +98,7 @@ AI 服务提供智能答疑、作业批改辅助、多模式对话等功能。�
   "messages": [
     {
       "role": "user", 
-      "content": "解释法拉第电磁感应定律"
+      "content": "解释某课程中的核心概念"
     }
   ],
   "stream": true
@@ -111,11 +111,11 @@ AI 服务提供智能答疑、作业批改辅助、多模式对话等功能。�
 ```
 data: {"type": "start", "mode": "tutor"}
 
-data: {"type": "content", "delta": "法拉第电磁感应定律"}
+data: {"type": "content", "delta": "核心概念"}
 
-data: {"type": "content", "delta": "是电磁学的基本定律之一"}
+data: {"type": "content", "delta": "是课程中的重要知识点"}
 
-data: {"type": "reference", "source": "第四章 电磁感应", "confidence": 0.92}
+data: {"type": "reference", "source": "第四章 相关内容", "confidence": 0.92}
 
 data: {"type": "end", "tokens_used": {"total": 280}, "response_time": 2.1}
 ```
@@ -296,7 +296,9 @@ data: {"type": "end", "tokens_used": {"total": 280}, "response_time": 2.1}
 ```json
 {
   "success": true,
-  "message": "对话删除成功"
+  "data": {
+    "message": "对话删除成功"
+  }
 }
 ```
 
@@ -374,8 +376,7 @@ data: {"type": "end", "tokens_used": {"total": 280}, "response_time": 2.1}
     "task_id": "rebuild_123",
     "status": "processing",
     "estimated_time": 300
-  },
-  "message": "知识库重建任务已启动"
+  }
 }
 ```
 
@@ -430,7 +431,11 @@ const chatWithAI = async (mode: string, messages: any[], stream = false) => {
     const reader = response.body?.getReader();
     // ... 处理 SSE 流
   } else {
-    return await response.json();
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result?.error?.message || 'AI 请求失败');
+    }
+    return result.data;
   }
 };
 
@@ -448,7 +453,11 @@ const gradeAssignment = async (assignmentId: string, content: string) => {
     }),
   });
   
-  return await response.json();
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result?.error?.message || 'AI 批改失败');
+  }
+  return result.data;
 };
 ```
 
@@ -464,7 +473,10 @@ def chat_with_ai(token: str, mode: str, messages: list):
             'messages': messages
         }
     )
-    return response.json()
+    result = response.json()
+    if not result.get('success'):
+        raise Exception(result.get('error', {}).get('message', 'AI 请求失败'))
+    return result.get('data')
 
 def search_knowledge(token: str, query: str, course_id: str):
     response = requests.post('/api/v1/ai/search',
@@ -474,5 +486,8 @@ def search_knowledge(token: str, query: str, course_id: str):
             'course_id': course_id
         }
     )
-    return response.json()
+    result = response.json()
+    if not result.get('success'):
+        raise Exception(result.get('error', {}).get('message', '检索失败'))
+    return result.get('data')
 ```
