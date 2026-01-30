@@ -1,0 +1,9 @@
+{
+  "inputs": [
+    "assets/training_samples/eval/benchmark_sample.jsonl"
+  ],
+  "output": "outputs/distilled/benchmark_distilled.jsonl",
+  "total_records": 2,
+  "distilled_records": 2,
+  "dropped": {}
+}

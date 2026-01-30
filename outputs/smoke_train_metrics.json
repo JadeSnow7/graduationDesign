@@ -1,0 +1,17 @@
+{
+  "train_file": "outputs/distilled/style_sft_distilled.jsonl",
+  "eval_file": "outputs/distilled/benchmark_distilled.jsonl",
+  "train_records": 3,
+  "eval_records": 2,
+  "vocab_size": 42,
+  "train": {
+    "tokens": 68,
+    "avg_nll": 3.495104988468836,
+    "perplexity": 32.95374753488942
+  },
+  "eval": {
+    "tokens": 50,
+    "avg_nll": 3.7207755597325662,
+    "perplexity": 41.296409524399074
+  }
+}
