@@ -1,0 +1,9 @@
+{
+  "inputs": [
+    "assets/training_samples/processed/style_sft_sample.jsonl"
+  ],
+  "output": "outputs/distilled/style_sft_distilled.jsonl",
+  "total_records": 3,
+  "distilled_records": 3,
+  "dropped": {}
+}
