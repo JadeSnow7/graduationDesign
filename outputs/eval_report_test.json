@@ -6,40 +6,6 @@
     "tool_call_accuracy": 1.0
   },
   "count": 5,
-  "by_type": {
-    "concept": {
-      "count": 2,
-      "metrics": {
-        "key_point_coverage": 1.0,
-        "refusal_accuracy": 1.0,
-        "response_format": 1.0
-      }
-    },
-    "calculation": {
-      "count": 1,
-      "metrics": {
-        "key_point_coverage": 1.0,
-        "tool_call_accuracy": 1.0,
-        "refusal_accuracy": 1.0,
-        "response_format": 1.0
-      }
-    },
-    "refusal": {
-      "count": 1,
-      "metrics": {
-        "refusal_accuracy": 1.0,
-        "response_format": 0.0
-      }
-    },
-    "derivation": {
-      "count": 1,
-      "metrics": {
-        "key_point_coverage": 1.0,
-        "refusal_accuracy": 1.0,
-        "response_format": 1.0
-      }
-    }
-  },
   "details": [
     {
       "id": "eval-001",
