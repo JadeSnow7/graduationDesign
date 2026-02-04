@@ -1,6 +1,6 @@
 # 工具调用（Tool Calling）技术文档
 
-本文档描述 AI 服务中的工具调用机制，使大模型能够调用外部计算工具进行精确计算与仿真。
+本文档描述 AI 服务中的工具调用机制，使大模型能够调用外部工具完成**可验证**的计算/检查任务；在写作课场景中，它可用于把“格式/结构/字数/引用”等检查从自由生成中剥离出来，降低幻觉与“编造规则”风险。
 
 ---
 
@@ -35,7 +35,9 @@
 | `vector_operation` | 矢量运算 | `/api/v1/calc/vector_op` |
 | `run_simulation` | 课程仿真 | `/api/v1/sim/*` |
 
-### 2.2 工具定义（对应 `tools.py`）
+> 说明：以上为“仿真/数学”示例工具集合，由 AI Service 调用仿真服务提供的 API；写作课的“格式/结构/引用”类工具可按相同机制扩展（见 7.1）。
+
+### 2.2 工具定义（对应 `code/ai_service/app/tools.py`）
 
 ```python
 TOOLS = [
@@ -162,9 +164,9 @@ async def chat_with_tools(query: str, tools: list) -> str:
 
 | 模块 | 文件 | 功能 |
 |------|------|------|
-| 工具定义 | `app/tools.py` | TOOLS 列表与执行器 |
-| 仿真服务 | `code/simulation_service/` | FastAPI 仿真端点 |
-| AI 主入口 | `app/main.py` | 工具调用流程集成 |
+| 工具定义 | `code/ai_service/app/tools.py` | `AVAILABLE_TOOLS` 列表与执行器 |
+| 仿真服务 | `code/simulation` | FastAPI 仿真与计算端点 |
+| AI 主入口 | `code/ai_service/app/main.py` | 工具调用流程集成 |
 
 ### 4.1 `tools.py` 结构
 
@@ -194,14 +196,15 @@ Content-Type: application/json
   "messages": [
     {"role": "user", "content": "计算铜在 1GHz 的趋肤深度"}
   ],
-  "enable_tools": true
+  "enable_tools": true,
+  "max_tool_calls": 3
 }
 ```
 
 响应：
 ```json
 {
-  "content": "### 结论\n铜在 1GHz 时的趋肤深度约为 **2.09 μm**...",
+  "reply": "### 结论\n铜在 1GHz 时的趋肤深度约为 **2.09 μm**...",
   "tool_calls": [
     {
       "name": "evaluate_expression",
@@ -244,6 +247,12 @@ logger.setLevel(logging.DEBUG)
 - `query_formula`：公式库查询（从 GraphRAG 检索公式定义）
 - `solve_equation`：方程求解（支持边界条件）
 - `plot_field`：场分布可视化
+
+写作课扩展建议（按需实现）：
+- `count_words`：字数/句子数/段落数统计（避免模型“目测”）
+- `check_citation_style`：引用格式/一致性检查（APA/IEEE 等）
+- `check_structure`：结构要素检查（thesis statement、topic sentence、conclusion 等）
+- `detect_plagiarism_risk`：学术诚信风险提示（规则/相似片段定位，需结合合规数据源）
 
 ### 7.2 与后训练的关系
 

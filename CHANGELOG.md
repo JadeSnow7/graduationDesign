@@ -30,7 +30,7 @@
 
 ### 新增
 - 初始项目结构
-- 前端 Vue.js 应用
+- 前端 React 应用
 - 后端 Go 服务
 - AI 服务 Python 应用
 - 仿真服务 Python 应用
@@ -38,7 +38,7 @@
 - 基础文档框架
 
 ### 技术栈
-- 前端：Vue.js 3 + TypeScript + Vite
+- 前端：React + TypeScript + Vite
 - 后端：Go + Gin + GORM
 - AI 服务：Python + FastAPI
 - 仿真服务：Python + FastAPI

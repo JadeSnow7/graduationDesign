@@ -10,6 +10,11 @@
 - 环境变量设置
 - 基本验证步骤
 
+### [模型训练与部署（HF + GraphRAG）](./ai-model-deployment-guide.md)
+- 基于 `code/ai_service/training/` 的 LoRA/QLoRA 训练流程
+- 本地 HF 推理（OpenAI-compatible）接入方式
+- GraphRAG 索引构建与启用
+
 ### [环境配置](./environment-setup.md)
 - 开发环境搭建
 - 生产环境配置
@@ -132,7 +137,7 @@ JWT_SECRET=your_jwt_secret
 JWT_EXPIRES_IN=24h
 
 # AI 服务配置
-LLM_BASE_URL=https://api.openai.com/v1
+LLM_BASE_URL=https://api.openai.com
 LLM_API_KEY=your_api_key
 LLM_MODEL=gpt-3.5-turbo
 

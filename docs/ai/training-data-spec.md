@@ -62,18 +62,18 @@
   "messages": [
     {
       "role": "system",
-      "content": "你是高校课程助教。请按以下结构回答：\n### 结论\n### 推导\n### 检查（单位/边界条件/极限情况）"
+      "content": "你是研究生专业英文写作课程助教。请按以下结构回答：\n### 结论\n### 解析\n### 检查（可执行性/一致性）"
     },
     {
       "role": "user",
-      "content": "什么是课程中的边界条件概念？"
+      "content": "什么是 thesis statement？它在课程论文里起什么作用？"
     },
     {
       "role": "assistant",
-      "content": "### 结论\n边界条件描述了两种介质分界面上物理量的连续性关系。\n\n### 推导\n根据课程相关基本方程的积分形式...\n\n### 检查（单位/边界条件/极限情况）\n- 单位：注意量纲一致\n- 边界条件：说明适用场景与例外情况"
+      "content": "### 结论\nthesis statement 是一篇课程论文中最核心的“主张/论点”，通常出现在引言末尾，用一句或两句明确回答“我主张什么、为何重要、将如何论证”。\n\n### 推导\n一篇合格的论文需要读者在早期就知道：本文讨论的对象是什么、作者的立场是什么、后文将用哪些理由或证据支持这一立场。thesis statement 的作用就是把这些信息浓缩为可检验的主张，并为段落结构提供“组织轴”。\n\n### 检查（可执行性/一致性）\n- 可执行：是否能据此写出 3-5 个支持段落？\n- 一致性：正文每段是否都能回扣 thesis？\n- 可检验：是否避免“太泛”的空话（如 very important）？"
     }
   ],
-  "meta": {"source": "lecture", "chapter": "ch2", "difficulty": "medium"}
+  "meta": {"source": "lecture", "chapter": "writing_basics", "difficulty": "medium"}
 }
 ```
 
@@ -86,15 +86,15 @@
   "messages": [
     {
       "role": "system",
-      "content": "以下是检索到的参考片段，请只基于这些片段回答，并使用 [编号] 标注引用。\n\n[1] 电位移矢量 D 的定义：D = ε₀E + P（来源：教材第2章）\n[2] 边界条件：D 的法向分量在分界面上满足 D₁n - D₂n = σ（来源：讲义2.3节）"
+      "content": "以下是检索到的参考片段，请只基于这些片段回答，并使用 [编号] 标注引用。\n\n[1] Thesis statement：在引言中明确论文的核心主张，并概括主要论证方向（来源：写作讲义 1.2）\n[2] Topic sentence：每段开头用一句话声明该段要证明的子观点，并与 thesis statement 保持一致（来源：写作讲义 2.1）"
     },
     {
       "role": "user",
-      "content": "电位移矢量 D 的边界条件是什么？"
+      "content": "thesis statement 和 topic sentence 的关系是什么？"
     },
     {
       "role": "assistant",
-      "content": "### 结论\n根据 [2]，电位移矢量 D 的法向分量在分界面上满足：\n$$D_{1n} - D_{2n} = \\sigma$$\n其中 σ 为分界面上的自由面电荷密度。\n\n### 推导\n由 [1] 可知 D = ε₀E + P，结合高斯定律...\n\n### 检查（单位/边界条件/极限情况）\n- 当 σ = 0 时，D 的法向分量连续"
+      "content": "### 结论\nthesis statement 给出全文的核心主张与论证方向 [1]；topic sentence 则在段落层面声明“这一段要证明的子观点”，并需要与 thesis statement 保持一致 [2]。\n\n### 分析\n- thesis statement（全文层级）：定义研究立场/主张，并提示后文的主要论证路径 [1]。\n- topic sentence（段落层级）：把 thesis 拆解成可分段论证的子观点，每段用 topic sentence 明确该段贡献 [2]。\n\n### 检查（可操作）\n- 逐段自检：每个 topic sentence 是否能用一句话说明“它如何支持 thesis”？\n- 若不能：说明段落可能偏题或 thesis 过于宽泛。"
     }
   ],
   "meta": {"source": "lecture", "has_rag_context": true}
@@ -102,6 +102,8 @@
 ```
 
 ### 2.3 工具调用（sim_tutor）
+
+> 说明：下例用于展示“tool_calls + tool_result + 最终解释”的数据结构；写作课可用同样 schema 承载字数/结构/引用格式等工具调用（工具名需与运行时可用工具保持一致）。
 
 ```json
 {

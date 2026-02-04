@@ -34,7 +34,7 @@ flowchart LR
     Browser[普通浏览器]
   end
 
-  subgraph FE[Frontend · Vue 3 H5]
+  subgraph FE[Frontend · React + Vite]
     Pages[登录 / 课程 / AI 对话 / 仿真与数值工具]
   end
 

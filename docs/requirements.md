@@ -112,7 +112,7 @@
 - **服务端**：支持 Docker 容器化部署，兼容 Linux (Ubuntu/CentOS) 环境。
 
 ### 4.4 可维护性
-- **代码规范**：遵循 Go 与 Vue 社区标准规范。
+- **代码规范**：遵循 Go 与 React/TypeScript 社区标准规范。
 - **文档**：提供完整的 API 文档（Swagger/OpenAPI）和部署文档。
 - **日志**：详细的业务日志与错误追踪。
 

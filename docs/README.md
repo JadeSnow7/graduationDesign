@@ -38,9 +38,15 @@
 - [仿真服务接口](./api/simulation-services.md)
 
 ### [AI 文档（模型与智能能力）](./ai/)
+- [AI 文档索引（写作课试点）](./ai/README.md)
+- [参考论文列表（Reading List）](./ai/papers.md)
 - [GraphRAG 用法](./ai/graph-rag.md)
+- [引导式学习（guided）](./ai/guided-learning.md)
+- [数据蒸馏（distillation）](./ai/distillation.md)
 - [学习状态分析模块](./ai/learning-analytics.md)
 - [后训练与微调计划](./ai/post-training-finetuning-plan.md)
+- [训练数据规范](./ai/training-data-spec.md)
+- [工具调用（Tool Calling）](./ai/tool-calling.md)
 
 ### 🚀 [部署文档](./deployment/)
 - [部署指南](./deployment/README.md)

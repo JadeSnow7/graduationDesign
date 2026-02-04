@@ -32,7 +32,11 @@
 
 ## 🤖 AI 与算法 (AI & Algorithms)
 
+- **[AI 文档索引 (AI README)](ai/README.md)**: AI 能力总览与推荐阅读顺序（写作课试点）。
+- **[参考论文列表 (Reading List)](ai/papers.md)**: 行业相关前沿论文与资料整理入口。
 - **[训练数据规范 (Training Data Spec)](ai/training-data-spec.md)**: AI 模型训练数据格式规范。
+- **[数据蒸馏 (Distillation)](ai/distillation.md)**: chat-style → prompt/response 的数据蒸馏与 smoke 链路验证。
+- **[引导式学习 (Guided Learning)](ai/guided-learning.md)**: 学习路径生成、会话状态、薄弱点检测与 RAG/工具集成。
 - **[后训练微调计划 (Post-Training Finetuning)](ai/post-training-finetuning-plan.md)**: 模型微调策略与计划。
 - **[工具调用 (Tool Calling)](ai/tool-calling.md)**: Agent 工具调用机制。
 - **[GraphRAG](ai/graph-rag.md)**: 基于图的检索增强生成技术文档。

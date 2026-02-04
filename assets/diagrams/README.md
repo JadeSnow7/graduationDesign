@@ -135,7 +135,7 @@ diagrams/
 ### 在文档中引用
 ```markdown
 <!-- 示例：当系统架构图可用时 -->
-![系统架构图](./exports/system-architecture.svg)
+![系统架构图] (./exports/system-architecture.svg)
 ```
 
 ### 在代码注释中引用

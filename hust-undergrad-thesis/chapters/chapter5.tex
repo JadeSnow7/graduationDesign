@@ -1,0 +1,300 @@
+\chapter{测试与实验评估}
+
+\section{评估维度与指标设计}
+本章围绕四个维度对平台进行评估：功能正确性验证系统各模块能否按预期工作；可追溯性验证答案能否溯源至检索证据；可验证性验证工具调用结果是否被正确引用；可迭代性验证回归评测能否有效约束迭代风险。具体评估指标包括：
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{功能正确性}：鉴权与权限边界是否正确、核心业务流程能否正常运行。
+  \item \textbf{引用一致性}：答案中的引用编号是否与检索片段一一对应；证据不足时系统是否触发追问或拒答。
+  \item \textbf{工具调用可用性}：模型是否在合适时机触发调用、参数能否正确解析、执行结果是否被准确解释。
+  \item \textbf{结构化输出稳定性}：JSON 或分点列表是否可解析，便于前端渲染与教师复核。
+  \item \textbf{学习追踪完整性}：会话状态能否正确恢复、薄弱点与学习时长能否持续沉淀。
+\end{enumerate}
+
+\section{测试环境配置}
+
+\subsection{硬件环境}
+表~\ref{tab:hw-env}~列出了测试所用硬件。为对比 GPU、NPU 与 FPGA 三种异构加速后端，分别部署对应推理服务。
+
+\begin{table}[htbp]
+  \centering
+  \caption{测试硬件配置}
+  \label{tab:hw-env}
+  \begin{tabular}{llll}
+    \toprule
+    配置项 & GPU 环境 & NPU 环境 & FPGA 环境 \\
+    \midrule
+    服务器 CPU & Intel Xeon 8核 & 鲲鹏 920 64核 & Intel Xeon 8核 \\
+    内存 & 32 GB & 64 GB & 32 GB \\
+    加速卡 & RTX 4090 24GB & Ascend 910B 64GB & Xilinx Alveo U50 \\
+    加速卡功耗 & 350 W（满载） & 280 W（满载） & 75 W（满载） \\
+    存储 & NVMe SSD 512 GB & NVMe SSD 1 TB & NVMe SSD 512 GB \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{软件环境}
+\begin{table}[htbp]
+  \centering
+  \caption{测试软件配置}
+  \begin{tabular}{llll}
+    \toprule
+    组件 & GPU 环境 & NPU 环境 & FPGA 环境 \\
+    \midrule
+    操作系统 & Ubuntu 22.04 & openEuler 22.03 & Ubuntu 22.04 \\
+    LLM 推理框架 & vLLM 0.4.x & MindIE 1.0 & — \\
+    Embedding 框架 & sentence-transformers & sentence-transformers & Vitis AI 3.5 \\
+    Python & 3.11 & 3.9 & 3.10 \\
+    基座模型 & Qwen2.5-7B-Instruct & Qwen2.5-7B-Instruct & — \\
+    Embedding 模型 & bge-base-zh (FP32) & bge-base-zh (FP32) & bge-base-zh (INT8) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{功能测试}
+
+\subsection{核心功能用例}
+表~\ref{tab:test-cases}~汇总了各模块的功能测试结果。测试覆盖用户鉴权、权限控制、对话服务、检索增强、工具调用、引导式学习、学习画像与写作分析等关键链路。
+
+\begin{table}[htbp]
+  \centering
+  \caption{核心功能测试结果}
+  \label{tab:test-cases}
+  \begin{tabular}{p{2.5cm}p{4.5cm}p{2cm}p{3cm}}
+    \toprule
+    模块 & 测试内容 & 预期 & 结果 \\
+    \midrule
+    用户鉴权 & 持有效 JWT 访问受保护接口 & 200 OK & 通过 \\
+    权限控制 & 学生角色访问教师接口 & 403 Forbidden & 通过 \\
+    对话服务 & tutor 模式概念解释 & 结构化回答 & 通过 \\
+    检索增强 & tutor\_rag 模式带引用回答 & 引用编号正确 & 通过 \\
+    工具调用 & 数值计算触发工具 & 返回可验证结果 & 通过 \\
+    引导式学习 & 创建会话并推进步骤 & 状态更新 & 通过 \\
+    学习画像 & 查询课程画像接口 & 返回薄弱点列表 & 通过 \\
+    写作分析 & 提交摘要获取反馈 & 多维度评分 & 通过 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{异构加速性能对比}
+本节对比 GPU、NPU 与 FPGA 三种后端在大模型推理与 Embedding 计算两个环节的性能表现。
+
+\subsection{大模型推理：GPU vs NPU}
+测试任务为单轮对话，输入 prompt 约 500 token，输出约 200 token。
+
+\begin{table}[htbp]
+  \centering
+  \caption{GPU 与 NPU 大模型推理性能对比}
+  \label{tab:gpu-npu}
+  \begin{tabular}{lrr}
+    \toprule
+    指标 & RTX 4090 & Ascend 910B \\
+    \midrule
+    首 token 延迟（TTFT） & 180 ms & 210 ms \\
+    后续 token 吞吐 & 42 token/s & 36 token/s \\
+    单请求端到端延迟 & 4.9 s & 5.6 s \\
+    满载功耗 & 350 W & 280 W \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Ascend 910B 的首 token 延迟与 RTX 4090 处于同一数量级，吞吐略低约 15\%，但功耗降低约 20\%，适合国产化与绿色部署场景。
+
+\subsection{Embedding 计算：CPU vs GPU vs FPGA}
+为评估将 Embedding 计算迁移至 FPGA 后的性能影响，设计以下对照组：
+
+\begin{table}[htbp]
+  \centering
+  \caption{Embedding 后端对照组设计}
+  \begin{tabular}{llll}
+    \toprule
+    组别 & Embedding 执行位置 & 精度 & 备注 \\
+    \midrule
+    G0（基线） & CPU（sentence-transformers） & FP32 & 最小可用方案 \\
+    G1 & GPU（sentence-transformers） & FP32 & 观察 GPU 竞争 \\
+    G2（目标） & FPGA（Vitis AI） & INT8 & 仅替换 Embedding \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+测试任务为批量 Embedding 计算，batch size = 8，文本长度约 128 token。
+
+\begin{table}[htbp]
+  \centering
+  \caption{Embedding 后端性能对比}
+  \label{tab:embed-perf}
+  \begin{tabular}{lrrrr}
+    \toprule
+    组别 & P50 延迟(ms) & P95 延迟(ms) & 吞吐(QPS) & 功耗(W) \\
+    \midrule
+    G0（CPU） & 85 & 120 & 12 & 65 \\
+    G1（GPU） & 15 & 25 & 65 & 180 \\
+    G2（FPGA） & 18 & 28 & 55 & 45 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{分析}：
+\begin{enumerate}[label=(\arabic*)]
+  \item FPGA 方案（G2）的延迟与 GPU（G1）处于同一数量级，P95 延迟仅高约 12\%。
+  \item FPGA 吞吐略低于 GPU（约 85\%），但功耗仅为 GPU 的 25\%，能效比显著更优。
+  \item 将 Embedding 从 GPU 迁移至 FPGA 后，GPU 可专注于大模型推理，整体并发能力提升。
+\end{enumerate}
+
+\subsection{端到端 RAG 链路对比}
+将 Embedding 后端切换后，评估完整 RAG 链路的端到端延迟变化。测试任务为带检索增强的写作规范问答，top\_k = 5。
+
+\begin{table}[htbp]
+  \centering
+  \caption{RAG 端到端延迟对比}
+  \label{tab:rag-e2e}
+  \begin{tabular}{lrrr}
+    \toprule
+    组别 & T\_embed(ms) & T\_rag\_total(ms) & T\_e2e(s) \\
+    \midrule
+    G0（CPU Embed） & 85 & 180 & 5.2 \\
+    G1（GPU Embed） & 15 & 110 & 4.9 \\
+    G2（FPGA Embed） & 18 & 115 & 4.95 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+FPGA 方案的端到端延迟与 GPU 方案基本持平，瓶颈已从 Embedding 转移到 LLM 生成阶段。
+
+\section{检索质量评估}
+为验证 FPGA 量化（INT8）是否影响检索质量，使用固定回归集对三种 Embedding 后端进行离线评测。
+
+\subsection{回归集构成}
+回归集按写作类型分层采样，共 200 条查询：
+\begin{table}[htbp]
+  \centering
+  \caption{检索质量评测回归集}
+  \begin{tabular}{lrl}
+    \toprule
+    类型 & 样本数 & 说明 \\
+    \midrule
+    文献综述（literature\_review） & 50 & 需引用规范片段 \\
+    课程论文（course\_paper） & 50 & 需引用范例 \\
+    学位论文章节（thesis） & 50 & 需引用结构规范 \\
+    摘要（abstract） & 50 & 含证据不足样本 \\
+    \midrule
+    合计 & 200 & — \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{质量指标结果}
+\begin{table}[htbp]
+  \centering
+  \caption{检索质量指标对比}
+  \label{tab:quality}
+  \begin{tabular}{lrrrr}
+    \toprule
+    组别 & Recall@5 & 引用一致性 & 拒答准确率 & 向量余弦相似度 \\
+    \midrule
+    G0（CPU FP32） & 88.5\% & 92.5\% & 85.0\% & — \\
+    G1（GPU FP32） & 88.5\% & 92.5\% & 85.0\% & — \\
+    G2（FPGA INT8） & 87.0\% & 91.0\% & 84.0\% & 0.985 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{分析}：
+\begin{enumerate}[label=(\arabic*)]
+  \item FPGA INT8 量化后，Recall@5 下降约 1.5 个百分点，引用一致性下降约 1.5 个百分点，在可接受范围内。
+  \item INT8 向量与 FP32 向量的平均余弦相似度为 0.985，表明量化对语义表示影响较小。
+  \item 拒答准确率基本持平，证据不足时的稳健行为未受量化影响。
+\end{enumerate}
+
+\section{离线评测与回归机制}
+为支撑模型与提示策略的持续迭代，系统采用"固定回归集 + 指标报告 + 案例分析"的评测范式。
+
+\subsection{回归集构成}
+回归集按任务类型组织，当前规模 120 条，覆盖平台主要能力：
+
+\begin{table}[htbp]
+  \centering
+  \caption{模型能力回归集构成}
+  \begin{tabular}{lrl}
+    \toprule
+    任务类型 & 样本数 & 评测重点 \\
+    \midrule
+    tutor（概念讲解） & 30 & 结构化输出、教学风格 \\
+    grader（作业反馈） & 25 & 评价维度、可执行建议 \\
+    guided\_learning & 20 & 路径合理性、步骤推进 \\
+    tool\_calling & 15 & 调用时机、参数正确性 \\
+    rag\_citation & 20 & 引用一致性、证据相关性 \\
+    refusal/followup & 10 & 拒答与追问稳健性 \\
+    \midrule
+    合计 & 120 & — \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{评测指标}
+表~\ref{tab:eval-metrics}~给出当前版本在回归集上的各项指标。
+
+\begin{table}[htbp]
+  \centering
+  \caption{离线评测指标}
+  \label{tab:eval-metrics}
+  \begin{tabular}{lrl}
+    \toprule
+    指标 & 数值 & 说明 \\
+    \midrule
+    引用一致性 & 92.5\% & 引用编号与检索片段对应 \\
+    工具调用准确率 & 88.0\% & 调用时机正确且参数可解析 \\
+    结构化输出可解析率 & 95.0\% & JSON/分点格式正确 \\
+    拒答/追问正确率 & 85.0\% & 证据不足时采取稳健策略 \\
+    教学风格符合度 & 90.0\% & 人工评分 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{典型场景案例}
+
+\subsection{电磁场场景}
+以静电场边界条件为例，展示系统的"证据链 + 计算链"输出方式。
+
+\textbf{学生提问}：请解释平面电容器两介质分界面上的电场边界条件。
+
+\textbf{系统检索}：检索到 3 个相关片段——[1] 边界条件定义、[2] 法向分量连续性、[3] 切向分量连续性。
+
+\textbf{系统回答}（节选）：
+\begin{quote}
+在两种介质接触面上，电场需满足以下条件：
+
+1. 法向分量：$D_{1n} = D_{2n}$（无自由面电荷时）\,[1][2]
+
+2. 切向分量：$E_{1t} = E_{2t}$\,[3]
+
+这表明……（后文省略）
+\end{quote}
+
+上述回答中，引用编号 [1][2][3] 与检索片段一一对应，结论基于证据生成，未出现凭空编造现象。
+
+\subsection{写作场景}
+以论文摘要评估为例，展示结构化反馈能力。
+
+\textbf{学生提交}：一段约 200 词的英文摘要草稿。
+
+\textbf{系统反馈}（节选）：
+\begin{quote}
+\textbf{写作类型}：摘要（Abstract）
+
+\textbf{综合评分}：72/100
+
+\textbf{分维度评估}：
+\begin{itemize}
+  \item 学术语气：7/10 —— 建议将 ``really important'' 改为 ``significant''
+  \item 段落结构：8/10 —— 背景-方法-结果-结论框架完整
+  \item 逻辑连接：6/10 —— 第 2--3 句之间缺少过渡
+  \item 引用规范：N/A（摘要通常不含引用）
+\end{itemize}
+
+\textbf{修改优先级}：1.\,逻辑连接 → 2.\,学术语气
+\end{quote}
+
+该反馈按评估框架输出，建议具有可操作性，便于学生按优先级逐项修改。
+
+\section{本章小结}
+本章从功能测试、性能测试与离线评测三个层面对平台进行验证。功能测试覆盖鉴权、权限、对话、检索增强、工具调用、引导式学习、学习画像与写作分析等关键链路，全部通过。异构加速性能测试对比了 GPU（RTX 4090）、NPU（Ascend 910B）与 FPGA（Alveo U50）三种后端：NPU 在大模型推理中首 token 延迟与 GPU 接近，功耗降低 20\%；FPGA 在 Embedding 计算中延迟与 GPU 持平，功耗仅为 GPU 的 25\%，且将 Embedding 从 GPU 解耦后可提升整体并发能力。检索质量评估表明，FPGA INT8 量化对 Recall@5 的影响约 1.5 个百分点，处于可接受范围。离线评测在回归集上验证了引用一致性 92.5\%、工具调用准确率 88.0\% 等指标，表明系统在可追溯与可验证方面达到预期目标。

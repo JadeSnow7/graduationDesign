@@ -72,6 +72,9 @@ class CoachingStrategySkill(BaseSkill):
 | 负面指标 | 15+ 短语 | 识别 AI 回复中的纠错信号 |
 | 正面指标 | 9+ 短语 | 识别正面反馈，避免误报 |
 
+环境变量：
+- `WEAK_POINT_DOMAIN=writing`（默认）或 `WEAK_POINT_DOMAIN=emfield`：切换薄弱点检测的概念域与指标词库
+
 ---
 
 ## 实现细节
@@ -104,9 +107,9 @@ class CoachingStrategySkill(BaseSkill):
 from app.weak_point_detector import detect_weak_points, get_weak_point_detector
 
 # 简单调用
-ai_reply = "这个想法有道理，但是还需要注意高斯定律的适用范围。"
+ai_reply = "这个段落思路有道理，但还需要注意引用规范与改述是否准确。"
 weak_points = detect_weak_points(ai_reply)
-print(weak_points)  # ['高斯定律']
+print(weak_points)  # ['引用规范']
 
 # 完整分析
 detector = get_weak_point_detector()
@@ -130,7 +133,7 @@ print(f"概念: {analysis.detected_concepts}, 置信度: {analysis.confidence:.2
 
 ## 已知限制
 
-**概念粒度固定**。当前词库以"概念"为最小单位，无法识别更细粒度的知识点（如"高斯定律的微分形式 vs 积分形式"）。可通过扩展词库增加子概念。
+**概念粒度固定**。当前词库以"概念"为最小单位，无法识别更细粒度的写作问题（如"topic sentence 的位置/功能"或"paraphrase vs quotation 的边界"）。可通过扩展词库增加子概念。
 
 **跨语言支持有限**。词库主要针对中文，英文概念仅作少量补充。对于双语教学场景需扩展英文术语。
 

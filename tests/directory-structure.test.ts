@@ -28,7 +28,7 @@ describe('Directory Structure Completeness', () => {
 
         // Verify code subdirectories exist
         const codeSubdirectories = [
-          'frontend', 'backend', 'ai_service', 'simulation', 
+          'frontend-react', 'backend', 'ai_service', 'simulation', 
           'shared', 'deployment', 'scripts'
         ]
         for (const subdir of codeSubdirectories) {

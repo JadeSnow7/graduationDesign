@@ -137,9 +137,9 @@
 └─────────────────────────────────────────────────────────────────┘
                                    │
 ┌─────────────────────────────────────────────────────────────────┐
-│                         前端层 (Vue 3 / React)                    │
+│                         前端层 (React)                            │
 │  组件：登录 │ 课程管理 │ AI 对话 │ 仿真工具 │ 个人中心             │
-│  状态管理：Pinia / Zustand    路由：Vue Router / React Router     │
+│  状态管理：Zustand           路由：React Router                   │
 └─────────────────────────────────────────────────────────────────┘
                                    │ HTTP/JSON (RESTful)
 ┌─────────────────────────────────────────────────────────────────┐
@@ -177,7 +177,7 @@
 
 | 模块 | 技术栈 | 职责 |
 |------|--------|------|
-| Frontend | Vue 3 / React + TypeScript | UI 渲染、用户交互、API 调用封装 |
+| Frontend | React + TypeScript | UI 渲染、用户交互、API 调用封装 |
 | Backend Gateway | Go + Gin + GORM | 业务逻辑、鉴权权限、服务编排 |
 | AI Service | Python + FastAPI + LangChain | LLM 接口、RAG 检索、Prompt 管理 |
 | Simulation Service | Python + FastAPI + NumPy | 数值计算、可视化生成 |

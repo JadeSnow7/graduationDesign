@@ -177,7 +177,7 @@ BACKEND_JWT_SECRET=your_jwt_secret
 BACKEND_CORS_ORIGINS=http://localhost:5173
 
 # AI服务配置
-LLM_BASE_URL=https://api.openai.com/v1
+LLM_BASE_URL=https://api.openai.com
 LLM_API_KEY=your_api_key
 LLM_MODEL=qwen-plus
 
@@ -228,6 +228,10 @@ WECOM_SECRET=your_secret
 ### 🚀 部署文档
 - [快速开始指南](docs/deployment/quick-start.md)
 - [生产环境部署](docs/deployment/README.md)
+- [模型训练与部署（HF + GraphRAG）](docs/deployment/ai-model-deployment-guide.md)
+
+### 🤖 AI 文档
+- [AI 文档索引（写作课试点）](docs/ai/README.md)
 
 ### 💻 开发文档
 - [开发环境配置](docs/development/README.md)
@@ -257,10 +261,13 @@ WECOM_SECRET=your_secret
 - ✅ 基础架构搭建完成
 - ✅ 用户认证与权限管理
 - ✅ 课程管理功能
-- ✅ AI答疑服务
-- ✅ 电磁场仿真服务
-- 🚧 学情分析功能开发中
-- 📋 企业微信集成计划中
+- ✅ AI 服务：对话（OpenAI-compatible）、流式输出、工具调用
+- ✅ 写作课能力：写作类型感知分析（rubric 输出）与润色（polish）
+- ✅ GraphRAG：可追溯引用、混合检索与索引热更新（可选）
+- ✅ 引导式学习（guided）：学习路径 + 薄弱点记录（Beta）
+- ✅ 训练与评测：LoRA/QLoRA 管线 + 数据蒸馏 + smoke 链路验证
+- 🟡 课程专属示例：仿真与数值计算模块（可选）
+- 📋 企业微信集成：OAuth/组织对接计划中
 
 ## 📄 许可证
 

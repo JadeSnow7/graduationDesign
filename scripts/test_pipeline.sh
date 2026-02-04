@@ -352,22 +352,7 @@ step3_unit_tests() {
     # 3.4 Frontend 构建校验
     log_step "3.4 Frontend 构建校验"
     
-    # Vue Frontend
-    if [[ -d "$CODE_DIR/frontend" ]]; then
-        cd "$CODE_DIR/frontend" || exit 1
-        if [[ ! -d "node_modules" ]]; then
-            npm install --silent 2>/dev/null
-        fi
-        if npm run build 2>&1 | tail -5; then
-            log_pass "Vue Frontend 构建成功"
-        else
-            log_fail "Vue Frontend 构建失败"
-            frontend_ok=false
-        fi
-        cd "$PROJECT_ROOT" || exit 1
-    fi
-    
-    # React Frontend
+    # Web Frontend (React)
     if [[ -d "$CODE_DIR/frontend-react" ]]; then
         cd "$CODE_DIR/frontend-react" || exit 1
         if [[ ! -d "node_modules" ]]; then

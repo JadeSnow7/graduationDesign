@@ -91,7 +91,7 @@
    ```
 
 4. **验证安装**
-   - 前端：http://localhost:3000
+   - 前端：http://localhost:5173
    - 后端 API：http://localhost:8080
    - AI 服务：http://localhost:8001
    - 仿真服务：http://localhost:8002
@@ -101,10 +101,11 @@
 ```
 education-project/
 ├── code/                    # 代码库
-│   ├── frontend/           # Vue.js 前端
+│   ├── frontend-react/     # Web 前端（React + Vite）
 │   ├── backend/            # Go 后端
 │   ├── ai_service/         # Python AI 服务
 │   ├── simulation/         # Python 仿真服务
+│   ├── mobile/             # 移动端（Expo，可选）
 │   ├── shared/             # 共享资源
 │   ├── deployment/         # 部署配置
 │   └── scripts/            # 构建脚本
@@ -124,12 +125,12 @@ education-project/
 - 使用有意义的变量和函数名
 - 添加必要的注释
 
-### 前端规范 (Vue.js + TypeScript)
+### 前端规范 (React + TypeScript)
 
-- 遵循 [Vue.js 风格指南](https://cn.vuejs.org/style-guide/)
+- 遵循 React 社区最佳实践（组件职责单一、hooks 管理副作用、避免过度状态提升）
 - 使用 TypeScript 严格模式
-- 组件名使用 PascalCase
-- 文件名使用 kebab-case
+- 组件名使用 PascalCase，hooks 使用 `useXxx` 命名
+- 文件名与目录名保持一致的工程风格（组件/页面 PascalCase，工具与 hooks camelCase/kebab-case 均可，但需统一）
 - 使用 ESLint 和 Prettier
 
 ```typescript

@@ -84,7 +84,8 @@ MYSQL_PASSWORD=app_password
 JWT_SECRET=your_jwt_secret_key_here
 
 # AI 服务配置（可选，不配置将使用模拟响应）
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+# 注意：本项目的 LLM_BASE_URL 不包含 `/v1` 后缀（AI Service 会自动拼接 `/v1/chat/completions`）
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode
 LLM_API_KEY=your_api_key
 LLM_MODEL=qwen-plus
 ```
@@ -158,7 +159,7 @@ curl http://localhost:8002/healthz
 如果需要运行前端开发服务器：
 
 ```bash
-cd code/frontend
+cd code/frontend-react
 npm install
 npm run dev
 ```

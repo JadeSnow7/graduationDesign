@@ -7,7 +7,7 @@
 - 需求与功能：`docs/requirements.md`
 - API 规范：`docs/api/README.md`、`docs/api/authentication.md`、`docs/api/course-management.md`、`docs/api/ai-services.md`、`docs/api/simulation-services.md`、`docs/api/legacy-api.md`
 - 架构设计：`docs/architecture/system-overview.md`、`docs/architecture/component-design.md`、`docs/architecture/README.md`、`docs/architecture/legacy-architecture.md`
-- 前端实现参考：`code/frontend/`（Vue 3 H5），路由与页面见 `code/frontend/src/router/index.ts`
+- 前端实现参考：`code/frontend-react/`（React + Vite），路由与页面见 `code/frontend-react/src/App.tsx` 与 `code/frontend-react/src/pages/`
 - 前端技术栈说明：`docs/development/README.md`
 
 ## 2. 前端任务需求（需求层）
@@ -91,7 +91,7 @@
 ## 4. 项目架构摘要（系统层）
 
 - 客户端：企业微信 H5 + 传统浏览器。
-- 前端：Vue 3 + Vite H5 应用，负责页面展示与交互。
+- 前端：React + TypeScript + Vite 应用，负责页面展示与交互。
 - 后端：Go + Gin，提供统一鉴权（JWT）、RBAC 权限、课程管理、AI/工具网关、企微 OAuth。
 - 能力服务：
   - AI 服务（FastAPI）：对接 LLM，支持 GraphRAG 检索与流式响应。

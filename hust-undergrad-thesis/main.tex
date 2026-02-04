@@ -1,5 +1,5 @@
 % !TEX program = xelatex
-\documentclass[UTF8,zihao=-4,oneside]{ctexbook}
+\documentclass[UTF8,zihao=-4,oneside,fontset=fandol]{ctexbook}
 
 \usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm]{geometry}
 \usepackage{setspace}
@@ -31,15 +31,25 @@
 \fancyhead[LO]{\nouppercase{\leftmark}}
 \fancyhead[RE]{\nouppercase{\rightmark}}
 \renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14.5pt}
 
-\newcommand{\HUSTTitle}{毕业论文题目}
-\newcommand{\HUSTSubtitle}{}
-\newcommand{\HUSTAuthor}{张三}
-\newcommand{\HUSTStudentId}{2020123456}
-\newcommand{\HUSTMajor}{计算机科学与技术}
-\newcommand{\HUSTSchool}{计算机科学与技术学院}
-\newcommand{\HUSTAdvisor}{李四 教授}
-\newcommand{\HUSTDate}{2025年5月}
+\newcommand{\HUSTTitle}{基于大模型的以学生为中心的智能教学平台设计与实现}
+\newcommand{\HUSTSubtitle}{——以电磁场与研究生专业英文写作为例}
+\newcommand{\HUSTAuthor}{胡傲东}
+\newcommand{\HUSTStudentId}{U202214900}
+\newcommand{\HUSTMajor}{基础电路设计与集成系统}
+\newcommand{\HUSTSchool}{集成电路学院}
+\newcommand{\HUSTAdvisor}{聂彦}
+\newcommand{\HUSTDate}{2026年5月}
+
+\hypersetup{
+  unicode=true,
+  pdftitle={\HUSTTitle\HUSTSubtitle},
+  pdfauthor={\HUSTAuthor},
+  pdfsubject={本科毕业论文},
+  pdfkeywords={大语言模型,智能教学平台,学生中心,课程模块化,GraphRAG,检索增强生成,引导式学习,工具调用,LoRA,QLoRA,数据蒸馏,React,Go,FastAPI},
+  hidelinks
+}
 
 \newcommand{\makecover}{%
   \thispagestyle{empty}%
@@ -84,6 +94,9 @@
 \mainmatter
 \input{chapters/chapter1}
 \input{chapters/chapter2}
+\input{chapters/chapter3}
+\input{chapters/chapter4}
+\input{chapters/chapter5}
 \input{chapters/conclusion}
 
 \appendix

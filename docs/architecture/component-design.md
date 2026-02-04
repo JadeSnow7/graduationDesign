@@ -14,7 +14,7 @@ graph TB
     end
     
     subgraph "前端层"
-        FE[Vue 3 前端应用]
+        FE[React 前端应用]
         subgraph "前端模块"
             AUTH[认证模块]
             COURSE[课程模块]

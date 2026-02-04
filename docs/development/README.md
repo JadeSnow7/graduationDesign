@@ -12,7 +12,7 @@
 
 ### [代码规范](./coding-standards.md)
 - Go 代码规范
-- TypeScript/Vue 代码规范
+- TypeScript/React 代码规范
 - Python 代码规范
 - 提交信息规范
 
@@ -52,11 +52,12 @@
 
 ### 前端技术栈
 - **语言**: TypeScript
-- **框架**: Vue 3
+- **框架**: React
 - **构建工具**: Vite
-- **UI 库**: Element Plus / Tailwind CSS
-- **状态管理**: Pinia
-- **HTTP 客户端**: Axios
+- **UI 库**: Tailwind CSS
+- **路由**: React Router
+- **状态管理**: Zustand
+- **HTTP 客户端**: fetch/Axios（按项目封装）
 
 ### AI 服务技术栈
 - **语言**: Python 3.9+
@@ -83,9 +84,9 @@
 ```
 education-project/
 ├── code/                           # 代码库
-│   ├── frontend/                   # 前端应用
+│   ├── frontend-react/             # Web 前端应用
 │   │   ├── src/
-│   │   │   ├── components/         # Vue 组件
+│   │   │   ├── components/         # React 组件
 │   │   │   ├── views/              # 页面视图
 │   │   │   ├── stores/             # 状态管理
 │   │   │   ├── api/                # API 调用
@@ -162,7 +163,7 @@ go mod tidy
 
 #### 前端依赖
 ```bash
-cd code/frontend
+cd code/frontend-react
 npm install
 ```
 
@@ -218,7 +219,7 @@ uvicorn app.main:app --reload --port 8002
 
 #### 前端服务
 ```bash
-cd code/frontend
+cd code/frontend-react
 npm run dev
 ```
 
@@ -226,7 +227,7 @@ npm run dev
 
 ### IDE/编辑器
 - **Go**: GoLand, VS Code with Go extension
-- **TypeScript/Vue**: WebStorm, VS Code with Vetur/Volar
+- **TypeScript/React**: WebStorm, VS Code with ESLint + TypeScript/React 插件
 - **Python**: PyCharm, VS Code with Python extension
 
 ### 调试工具

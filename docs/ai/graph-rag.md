@@ -1,6 +1,6 @@
 # GraphRAG（图结构 RAG）在本项目中的用法
 
-本项目将 GraphRAG 作为 **AI 服务（`services/ai`）的一层检索增强**：先从本地知识库检索出"片段 + 邻接扩展（图）"，再把这些片段注入到上游大模型的对话上下文中，从而降低幻觉并让回答可追溯。
+本项目将 GraphRAG 作为 **AI 服务（`code/ai_service`）的一层检索增强**：先从本地知识库检索出“片段 + 邻接扩展（图）”，再把这些片段注入到上游大模型的对话上下文中，从而降低幻觉并让回答可追溯。
 
 ## 1. 集成点
 
@@ -65,7 +65,7 @@ GRAPH_RAG_MAX_CONTEXT_CHARS=4000
 ```json
 {
   "mode": "tutor_rag",
-  "messages": [{"role": "user", "content": "什么是边界条件？"}]
+  "messages": [{"role": "user", "content": "文献综述应该如何组织段落并体现“文献综合”？"}]
 }
 ```
 
@@ -74,7 +74,7 @@ GRAPH_RAG_MAX_CONTEXT_CHARS=4000
 POST /v1/chat/hybrid
 {
   "mode": "tutor_rag",
-  "messages": [{"role": "user", "content": "什么是边界条件？"}],
+  "messages": [{"role": "user", "content": "如何写出清晰的 thesis statement？"}],
   "course_id": "course-001",
   "user_id": "student-001",
   "user_role": "student"

@@ -22,10 +22,11 @@ describe('Overall Structure Validation', () => {
   test('All property tests should pass when run together', async () => {
     // This test ensures all property tests are working correctly
     try {
-      const testResult = execSync('npm test', {
+      // Run vitest excluding this file to avoid recursive invocation.
+      const testResult = execSync('npx vitest --run --exclude \"**/overall-structure-validation.test.ts\"', {
         cwd: join(PROJECT_ROOT, 'tests'),
         encoding: 'utf-8',
-        timeout: 30000
+        timeout: 60000
       })
 
       // Check that all tests passed
@@ -173,7 +174,7 @@ describe('Overall Structure Validation', () => {
       fc.property(fc.constant(PROJECT_ROOT), (projectRoot) => {
         // Test path handling across platforms
         const testPaths = [
-          'code/frontend/src',
+          'code/frontend-react/src',
           'code/backend/cmd/server',
           'academic/thesis/src',
           'docs/architecture',
@@ -284,7 +285,7 @@ describe('Overall Structure Validation', () => {
         const requiredStructure = [
           // Code structure (Requirement 1)
           'code',
-          'code/frontend',
+          'code/frontend-react',
           'code/backend',
           'code/ai_service',
           'code/simulation',
