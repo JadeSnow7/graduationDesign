@@ -1,13 +1,16 @@
-name: CD
+name: CD (Manual)
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      app_version:
+        description: "Release version to deploy (without v). Leave empty for latest."
+        required: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ secrets.PROD_HOST != '' && secrets.PROD_USER != '' && secrets.PROD_SSH_KEY != '' && secrets.DEPLOY_PATH != '' }}
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -19,6 +22,9 @@ jobs:
           known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
           script_stop: true
           script: |
+            export APP_VERSION=${{ inputs.app_version || 'latest' }}
+            export IMAGE_REGISTRY=ghcr.io
+            export IMAGE_NAMESPACE=${{ github.repository_owner }}
             cd ${{ secrets.DEPLOY_PATH }}
             docker-compose -f code/deployment/docker/docker-compose.prod.yml pull
-            docker-compose -f code/deployment/docker/docker-compose.prod.yml up -d --build
+            docker-compose -f code/deployment/docker/docker-compose.prod.yml up -d

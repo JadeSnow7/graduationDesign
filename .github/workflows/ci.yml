@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: code
+        working-directory: code/frontend-react
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,11 +48,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: code/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Lint
-        run: npm -w frontend-react run lint
+        run: npm run lint
       - name: Test
-        run: npm -w frontend-react run test -- --run
+        run: npm run test -- --run
+
+  ai_service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/ai_service
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Test
+        run: pytest -q
