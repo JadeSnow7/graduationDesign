@@ -81,6 +81,8 @@ public
 
 # Vuepress build output
 .vuepress/dist
+docs/.vitepress/dist
+docs/.vitepress/cache
 
 # Serverless directories
 .serverless/
