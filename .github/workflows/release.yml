@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Get previous tag
+        id: previoustag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          if [ -z "${{ steps.previoustag.outputs.PREV_TAG }}" ]; then
+            echo "First release - generating full changelog"
+            git log --pretty=format:"- %s (%h)" > CHANGELOG.md
+          else
+            echo "Generating changelog from ${{ steps.previoustag.outputs.PREV_TAG }} to HEAD"
+            git log ${{ steps.previoustag.outputs.PREV_TAG }}..HEAD --pretty=format:"- %s (%h)" > CHANGELOG.md
+          fi
+          
+          # Add header
+          {
+            echo "# Release v${{ steps.version.outputs.VERSION }}"
+            echo ""
+            echo "## Changes"
+            echo ""
+            cat CHANGELOG.md
+          } > CHANGELOG_FINAL.md
+          
+          mv CHANGELOG_FINAL.md CHANGELOG.md
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
