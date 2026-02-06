@@ -154,7 +154,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy (SSH)
-        if: secrets.PROD_HOST != '' && secrets.PROD_USER != '' && secrets.PROD_SSH_KEY != '' && secrets.DEPLOY_PATH != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_HOST }}
