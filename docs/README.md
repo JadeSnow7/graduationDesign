@@ -14,7 +14,7 @@
 - [CI/CD 配置](./03-how-to-guides/ci-cd-setup.md)
 
 ### 参考手册
-- [API 接口文档](./04-reference/api/README.md)
+- [API 接口文档](./04-reference/api/index.md)
 
 ### 概念解释
 - [系统设计](./05-explanation/system-design.md)
@@ -25,6 +25,7 @@
 
 ### 贡献指南
 - [文档规范](./06-contributing/doc-style.md)
+- [代码规范](./06-contributing/code-style.md)
 - [项目规范指南](./06-contributing/项目规范指南.md)
 
 ---

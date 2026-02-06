@@ -33,3 +33,9 @@
 - 信任边界：只有携带 `X-AI-Gateway-Token` 且通过 `AI_GATEWAY_SHARED_TOKEN` 校验的请求，才允许 `public`/`cloud`/`auto`。
 - 冲突策略：`X-Privacy-Level` 与 JSON `privacy`、`X-LLM-Route` 与 JSON `route` 冲突时返回 `400`（`CONFLICTING_ROUTING_PARAMS`）。
 - 非生产兜底：`APP_ENV!=prod` 时默认 `LLM_ENABLE_CLOUD_FALLBACK_NONPROD=false`，即使 `public` 也不自动兜底云端。
+
+## 4. 内部 API 约束说明
+
+- `AI Service` 内部 API（`/v1/*`）不受 `openapi.lock.json` 的 CI 门禁直接约束。
+- 但其行为必须与对外契约（`/api/v1/*`）保持一致，并通过测试与文档校验。
+- 详细策略见：[API 锁定策略](../../04-reference/versioning/api-lock-policy.md)。

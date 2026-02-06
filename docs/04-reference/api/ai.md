@@ -2,7 +2,7 @@
 
 本文件描述后端对外提供的 AI 接口（`/api/v1/ai/*`）。这些接口由 Go 后端鉴权后转发到 AI Service（`code/ai_service`）。
 
-> 写作课的“写作提交/统计/反馈”属于写作模块接口（如 `/api/v1/courses/{courseId}/writing`），详见 `docs/api/swagger.yaml`。
+> 写作课的“写作提交/统计/反馈”属于写作模块接口（如 `/api/v1/courses/{courseId}/writing`），详见 `docs/04-reference/api/openapi.yaml`。
 
 ## 权限要求
 
@@ -133,4 +133,3 @@
 ```
 
 更多机制说明见 `docs/05-explanation/ai/guided-learning.md`。
-

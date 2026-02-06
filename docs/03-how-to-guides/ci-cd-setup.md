@@ -62,3 +62,7 @@ Runs on every PR:
 - SonarCloud analysis
 - Dependency review
 - Coverage reports
+
+## 延伸阅读
+
+- [CI/CD Workflow 架构与门禁边界](./ci-cd-workflow-architecture.md)

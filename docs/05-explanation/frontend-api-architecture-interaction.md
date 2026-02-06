@@ -4,11 +4,11 @@
 
 ## 1. 范围与主要来源
 
-- 需求与功能：`docs/requirements.md`
-- API 规范：`docs/api/README.md`、`docs/api/authentication.md`、`docs/api/course-management.md`、`docs/api/ai-services.md`、`docs/api/simulation-services.md`、`docs/api/legacy-api.md`
-- 架构设计：`docs/05-explanation/system-design.md`、`docs/05-explanation/architecture/component-design.md`、`docs/05-explanation/architecture/README.md`、`docs/05-explanation/architecture/legacy-architecture.md`
+- 需求与功能：`docs/05-explanation/requirements.md`
+- API 规范：`docs/04-reference/api/index.md`、`docs/04-reference/api/auth.md`、`docs/04-reference/api/course.md`、`docs/04-reference/api/ai.md`、`docs/04-reference/api/simulation.md`、`docs/04-reference/api/openapi.yaml`
+- 架构设计：`docs/05-explanation/system-design.md`、`docs/05-explanation/architecture/component-design.md`、`docs/05-explanation/architecture/project-design-document.md`、`docs/05-explanation/architecture/react-layered-architecture.md`
 - 前端实现参考：`code/frontend-react/`（React + Vite），路由与页面见 `code/frontend-react/src/App.tsx` 与 `code/frontend-react/src/pages/`
-- 前端技术栈说明：`docs/development/README.md`
+- 前端技术栈说明：`docs/01-getting-started/quick-start.md`、`code/frontend-react/package.json`
 
 ## 2. 前端任务需求（需求层）
 
@@ -55,7 +55,7 @@
 - 认证方式：JWT Bearer Token。
 - 统一响应结构：`{ success, data }`；错误结构：`{ success: false, error: { code, message, details } }`。
 
-### 3.2 认证接口（`docs/api/authentication.md`）
+### 3.2 认证接口（`docs/04-reference/api/auth.md`）
 - `GET /healthz`：健康检查。
 - `POST /auth/login`：账号密码登录。
 - `GET /auth/me`：获取当前用户与权限。
@@ -64,27 +64,27 @@
   - `POST /auth/wecom`
   - `POST /auth/wecom/jsconfig`
 
-### 3.3 课程管理接口（`docs/api/course-management.md`）
+### 3.3 课程管理接口（`docs/04-reference/api/course.md`）
 - 课程：`GET /courses`、`GET /courses/{id}`、`POST /courses`、`PUT /courses/{id}`、`DELETE /courses/{id}`
 - 成员：`GET /courses/{id}/members`、`POST /courses/{id}/members`、`DELETE /courses/{id}/members/{user_id}`、`POST /courses/join`
 - 作业：`GET /courses/{id}/assignments`、`POST /courses/{id}/assignments`
 - 资源：`GET /courses/{id}/resources`、`POST /courses/{id}/resources`
 
-### 3.4 AI 服务接口（`docs/api/ai-services.md`）
+### 3.4 AI 服务接口（`docs/04-reference/api/ai.md`）
 - 对话：`POST /ai/chat`（支持 `stream=true` SSE）
 - 批改：`POST /ai/grade`
 - 历史：`GET /ai/history`、`GET /ai/conversations/{id}`、`DELETE /ai/conversations/{id}`
 - 知识库：`POST /ai/search`、`POST /ai/knowledge/rebuild`
 - 模式：`tutor`/`grader`/`sim_explain`/`formula_verify`/`sim_tutor`/`problem_solver`，可加 `_rag` 启用 GraphRAG。
 
-### 3.5 课程专属仿真服务接口（`docs/api/simulation-services.md`）
+### 3.5 课程专属仿真服务接口（`docs/04-reference/api/simulation.md`）
 - 静电场：`POST /sim/laplace2d`、`/sim/point_charges`、`/sim/gauss_flux`
 - 静磁场：`POST /sim/wire_field`、`/sim/solenoid`、`/sim/ampere_loop`
 - 电磁波：`POST /sim/wave_1d`、`/sim/fresnel`
 - 任务管理：`GET /sim/history`、`GET /sim/results/{id}`、`DELETE /sim/results/{id}`
 - 响应常包含 `png_base64`，前端可直接渲染为图片。
 
-### 3.6 数值计算接口（原型，`docs/api/legacy-api.md`）
+### 3.6 数值计算接口（原型，`docs/04-reference/api/openapi.yaml`）
 - `POST /calc/integrate`、`/calc/differentiate`、`/calc/evaluate`、`/calc/vector_op`
 - 说明：该组接口仅在原型文档中出现，当前前端工具页已调用这些接口。
 
@@ -128,6 +128,6 @@
 
 ## 6. 待补充与一致性注意
 
-- `docs/api/README.md` 引用的 `calculation-services.md` 在仓库内不存在，数值计算仅在 `docs/api/legacy-api.md` 描述。
-- `docs/05-explanation/architecture/README.md` 提到的 `data-architecture.md` 与 `security-architecture.md` 未在仓库中发现。
-- 前端已调用 `/calc/*` 原型接口，建议补齐正式 API 文档并统一到 `docs/api/`。
+- 文档入口已统一到 `docs/04-reference/api/`；新增或调整接口时应同步更新对应页面与 OpenAPI。
+- 前端已调用 `/calc/*` 原型接口，建议后续在 `docs/04-reference/api/` 增补独立章节说明参数与错误码。
+- 架构与交互文档应持续与 `code/frontend-react/` 实现对齐，避免字段或路由漂移。

@@ -276,7 +276,7 @@ git pull
 ## 下一步
 
 - 已完成 [环境搭建](../03-how-to-guides/deployment/environment-setup.md)
-- 熟悉 [API 文档](../04-reference/api/README.md)
+- 熟悉 [API 文档](../04-reference/api/)
 
 ## 2. 部署
 

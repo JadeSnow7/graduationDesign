@@ -12,3 +12,7 @@
 ## OpenAPI 定义
 
 完整的 API 定义见 [openapi.yaml](./openapi.yaml)
+
+## 契约治理
+
+- [契约锁定边界（API Lock Policy）](../versioning/api-lock-policy.md)

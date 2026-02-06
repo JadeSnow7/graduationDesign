@@ -178,7 +178,7 @@ curl -sf http://localhost:8001/healthz  # 验证 AI Service
 
 ## API 测试流程（基于 API 规范）
 
-该流程是对“步骤 4 集成测试 / 步骤 6 性能评测”的细化，适用于后端接口或客户端调用发生变化的场景。以 `docs/api/README.md` 与各模块接口文档为唯一规范来源；若维护了 OpenAPI（`docs/api/swagger.yaml`），则以 OpenAPI 为机器可验证的“契约”。
+该流程是对“步骤 4 集成测试 / 步骤 6 性能评测”的细化，适用于后端接口或客户端调用发生变化的场景。以 `docs/04-reference/api/index.md` 与各模块接口文档为唯一规范来源；若维护了 OpenAPI（`docs/04-reference/api/openapi.yaml`），则以 OpenAPI 为机器可验证的“契约”。
 
 ### A. 接口清单与风险分级
 
@@ -197,7 +197,7 @@ curl -sf http://localhost:8001/healthz  # 验证 AI Service
 - 时间/数字：时间格式、单位、边界值
 - 错误规范：错误码、message、HTTP 状态码一致
 
-> 若存在 `swagger.yaml`，建议用 OpenAPI 校验工具对响应进行 schema 校验；若暂未维护 OpenAPI，至少以接口文档与 `code/mobile/src/api.ts` 实际字段为基准做人工核对。
+> 若存在 `openapi.yaml`，建议用 OpenAPI 校验工具对响应进行 schema 校验；若暂未维护 OpenAPI，至少以接口文档与 `code/mobile/src/api.ts` 实际字段为基准做人工核对。
 
 ### C. 正向 + 反向用例
 
@@ -259,7 +259,7 @@ curl -sS http://localhost:8080/api/v1/courses \\
 - 变更模块：认证 / 课程 / 作业 / AI / 仿真 / 其他
 - 影响范围：新增/修改/删除接口
 - 负责人：姓名
-- 关联文档：`docs/api/README.md` / 模块接口文档 / `swagger.yaml`
+- 关联文档：`docs/04-reference/api/index.md` / 模块接口文档 / `openapi.yaml`
 
 **回归结果**
 

@@ -461,7 +461,7 @@ instruments -t "Time Profiler" -D output.trace ./backend_binary
 ## 附录：快速链接
 
 - **系统架构**: 见 [System Design](../system-design.md)
-- **API 索引**: [API Reference](../../04-reference/api/README.md)
+- **API 索引**: [API Reference](../../04-reference/api/)
 - **代码库**: [Codebase](https://github.com/JadeSnow7/graduationDesign/tree/main/code/README.md)
 - [需求规格说明](../requirements.md)
 - [代码仓库](https://github.com/JadeSnow7/graduationDesign/tree/main/code)

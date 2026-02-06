@@ -31,15 +31,15 @@
  ### 🧩 [规格与计划 (已归档)](#)
  - [Mini App 技术选型建议](../05-explanation/architecture/mini-app-selection.md)
  
- ### [API 参考](../04-reference/api/README.md)
- - [API 文档索引](../04-reference/api/README.md)
+ ### [API 参考](../04-reference/api/)
+ - [API 文档索引](../04-reference/api/)
  - [OpenAPI 定义](../04-reference/api/openapi.yaml)
  - [认证接口](../04-reference/api/auth.md)
  - [课程管理](../04-reference/api/course.md)
  - [AI 服务接口](../04-reference/api/ai.md)
  - [仿真服务接口](../04-reference/api/simulation.md)
  
- ### [AI 文档（模型与智能能力）](../05-explanation/ai/README.md)
+ ### [AI 文档（模型与智能能力）](../05-explanation/ai/)
  - [AI 文档索引（写作课试点）](../05-explanation/ai-pipeline.md)
  - [参考论文列表（Reading List）](../05-explanation/ai/papers.md)
  - [GraphRAG 用法](../05-explanation/ai/graph-rag.md)
@@ -66,7 +66,7 @@
  |-------------|----------|
  | 项目整体设计思路和技术选型 | [项目设计文档](../05-explanation/architecture/project-design-document.md) ⭐ |
  | 系统如何部署运行 | [快速启动](./quick-start.md) |
- | 如何调用后端 API | [API 文档](../04-reference/api/README.md) |
+| 如何调用后端 API | [API 文档](../04-reference/api/) |
  | 前端代码结构 | [前端分层架构](../05-explanation/architecture/react-layered-architecture.md) |
  | 功能需求明细 | [需求规格说明](../05-explanation/requirements.md) |
 
@@ -81,6 +81,6 @@
 
 ## 相关资源
 
-- [项目主 README](../README.md)
+- [项目文档首页](../)
 - [代码库说明](https://github.com/JadeSnow7/graduationDesign/tree/main/code/README.md)
 - [学术材料](https://github.com/JadeSnow7/graduationDesign/tree/main/academic/README.md)
