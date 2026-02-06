@@ -104,7 +104,7 @@ export default defineConfig({
         ],
 
         // search: {
-        //     provider: 'local' // Disabled due to duplicate ID error with intro.md
+        //     provider: 'local'
         // },
 
         footer: {
