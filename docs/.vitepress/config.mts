@@ -55,8 +55,19 @@ export default defineConfig({
                         { text: '课程管理', link: '/04-reference/api/course' },
                         { text: 'AI 服务', link: '/04-reference/api/ai' },
                         { text: '仿真服务', link: '/04-reference/api/simulation' },
-                        { text: 'OpenAPI 定义', link: '/04-reference/api/openapi' },
-                        { text: '契约锁定策略', link: '/04-reference/versioning/api-lock-policy' }
+                        { text: 'OpenAPI 定义', link: '/04-reference/api/openapi' }
+                    ]
+                },
+                {
+                    text: 'CLI 工具',
+                    items: [
+                        { text: '命令参考', link: '/04-reference/cli/' }
+                    ]
+                },
+                {
+                    text: '配置手册',
+                    items: [
+                        { text: '环境变量', link: '/04-reference/config/' }
                     ]
                 }
             ],
