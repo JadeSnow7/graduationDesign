@@ -5,7 +5,6 @@ export default defineConfig({
     title: "智能教学平台",
     description: "基于 AI 的以学生为中心的智能教学系统",
     // srcDir removed, default is root of where vitepress is run (which is docs/ based on script)
-    ignoreDeadLinks: true, // 暂时忽略死链，后续修复
 
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
@@ -21,7 +20,7 @@ export default defineConfig({
                 {
                     text: '入门指南',
                     items: [
-                        { text: '项目简介', link: '/01-getting-started/README' },
+                        { text: '项目简介', link: '/01-getting-started/intro' },
                         { text: '环境要求', link: '/01-getting-started/prerequisites' },
                         { text: '快速开始', link: '/01-getting-started/quick-start' },
                         { text: '用户指南', link: '/01-getting-started/USER_GUIDE' }
@@ -89,9 +88,9 @@ export default defineConfig({
             { icon: 'github', link: 'https://github.com/JadeSnow7/graduationDesign' }
         ],
 
-        search: {
-            provider: 'local'
-        },
+        // search: {
+        //     provider: 'local' // Disabled due to duplicate ID error with intro.md
+        // },
 
         footer: {
             message: 'Released under the MIT License.',

@@ -151,12 +151,12 @@ curl http://localhost:8002/healthz
 ### 6. 访问应用
 
 #### 后端 API
-- **地址**: `http://localhost:8080`
-- **健康检查**: `http://localhost:8080/healthz`
-- **API 文档**: `http://localhost:8080/swagger/index.html` (如果启用)
+- **地址**: http://localhost:8080
+- **健康检查**: http://localhost:8080/healthz
+- **API 文档**: http://localhost:8080/swagger/ (如果启用)
 
 #### 前端开发服务器（可选）
-- **地址**: `http://localhost:5173`
+如果需要运行前端开发服务器：
 
 ```bash
 cd code/frontend-react
@@ -164,7 +164,7 @@ npm install
 npm run dev
 ```
 
-前端将在 `http://localhost:5173` 启动。
+前端将在 http://localhost:5173 启动。
 
 ## 默认账户
 
@@ -273,17 +273,19 @@ docker-compose down -v
 git pull
 
 # 重新构建并启动服务
+docker-compose up -d --build
+```
+
 ## 下一步
 
-- 已完成 [环境搭建](../03-how-to-guides/deployment/environment-setup.md)
-- 熟悉 [API 文档](../04-reference/api/README.md)
+- 阅读 [环境配置](./environment-setup.md) 了解详细配置选项
+- 查看 [API 文档](../api/) 了解接口使用方法
+- 参考 [生产部署](./production-deployment.md) 进行生产环境部署
+- 配置 [监控运维](./monitoring.md) 确保系统稳定运行
 
-## 2. 部署
+## 获取帮助
 
-参考 [生产环境部署](../03-how-to-guides/deployment/production-deployment.md) 或 [监控配置](../03-how-to-guides/deployment/monitoring.md)。
-
-## 3. 故障排查
-
-遇到问题请查看 [故障排查指南](../03-how-to-guides/deployment/troubleshooting.md)。
+如果遇到问题，请：
+1. 查看 [故障排查指南](./troubleshooting.md)
 2. 检查项目 Issues
 3. 联系技术支持团队

@@ -5,7 +5,7 @@
 ## 快速导航
 
 ### 入门指南
-- [项目简介](./01-getting-started/README.md)
+- **项目简介**：[Getting Started](./01-getting-started/intro.md)
 - [环境要求](./01-getting-started/prerequisites.md)
 - [快速开始](./01-getting-started/quick-start.md)
 - [用户指南](./01-getting-started/USER_GUIDE.md)

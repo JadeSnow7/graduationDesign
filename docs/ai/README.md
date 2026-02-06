@@ -16,12 +16,12 @@
 
 ## 2. 推荐阅读顺序
 
-1. `../03-how-to-guides/deployment/ai-model-deployment-guide.md`（训练+部署一条龙）
-2. `./ai/post-training-finetuning-plan.md`（训练路线与实验设计）
-3. `./ai/training-data-spec.md`（数据格式与采集/标注建议）
-4. `./ai/graph-rag.md`（RAG 与引用溯源）
-5. `./ai/guided-learning.md`（引导式学习与薄弱点记录）
-6. `./ai/distillation.md`（数据蒸馏与 smoke 链路验证）
-7. `./ai/tool-calling.md`（工具调用机制与扩展点）
-8. `./ai/learning-analytics.md`（学习状态分析与画像）
-9. `./ai/papers.md`（参考论文列表：资料整理与调研入口）
+1. `docs/deployment/ai-model-deployment-guide.md`（训练+部署一条龙）
+2. `docs/ai/post-training-finetuning-plan.md`（训练路线与实验设计）
+3. `docs/ai/training-data-spec.md`（数据格式与采集/标注建议）
+4. `docs/ai/graph-rag.md`（RAG 与引用溯源）
+5. `docs/ai/guided-learning.md`（引导式学习与薄弱点记录）
+6. `docs/ai/distillation.md`（数据蒸馏与 smoke 链路验证）
+7. `docs/ai/tool-calling.md`（工具调用机制与扩展点）
+8. `docs/ai/learning-analytics.md`（学习状态分析与画像）
+9. `docs/ai/papers.md`（参考论文列表：资料整理与调研入口）
