@@ -41,7 +41,8 @@ export default defineConfig({
                 {
                     text: '操作指南',
                     items: [
-                        { text: 'CI/CD 配置', link: '/03-how-to-guides/ci-cd-setup' }
+                        { text: 'CI/CD 配置', link: '/03-how-to-guides/ci-cd-setup' },
+                        { text: 'CI/CD 架构', link: '/03-how-to-guides/ci-cd-workflow-architecture' }
                     ]
                 }
             ],
@@ -54,7 +55,8 @@ export default defineConfig({
                         { text: '课程管理', link: '/04-reference/api/course' },
                         { text: 'AI 服务', link: '/04-reference/api/ai' },
                         { text: '仿真服务', link: '/04-reference/api/simulation' },
-                        { text: 'OpenAPI 定义', link: '/04-reference/api/openapi' }
+                        { text: 'OpenAPI 定义', link: '/04-reference/api/openapi' },
+                        { text: '契约锁定策略', link: '/04-reference/versioning/api-lock-policy' }
                     ]
                 }
             ],
@@ -77,8 +79,9 @@ export default defineConfig({
                     text: '贡献指南',
                     items: [
                         { text: '文档规范', link: '/06-contributing/doc-style' },
+                        { text: '代码规范', link: '/06-contributing/code-style' },
                         { text: '项目规范', link: '/06-contributing/项目规范指南' },
-                        { text: '测试流程', link: '/06-contributing/标准化测试流程' },
+                        { text: '测试流程', link: '/06-contributing/testing-guide' },
                         { text: '模块设计模板', link: '/06-contributing/模块设计文档模板' }
                     ]
                 }
