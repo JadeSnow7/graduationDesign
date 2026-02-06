@@ -8,6 +8,7 @@
 - AI 服务接口：`POST /v1/chat`
 - 启用方式：`mode` 追加后缀 `_rag`，例如 `tutor_rag`、`grader_rag`
 - 开关：环境变量 `GRAPH_RAG_ENABLED=true`
+- 路由字段（可选）：`privacy: private|public`、`route: local|cloud|auto`
 
 ### 新增接口（v0.2.0）
 - **混合检索**：`POST /v1/chat/hybrid` - 支持语义+关键词混合检索，带 ACL 过滤
@@ -40,6 +41,22 @@ curl -X POST http://localhost:8001/v1/graphrag/index \
 ## 3. 环境变量配置
 
 ```env
+# 路由与隐私策略
+APP_ENV=dev|staging|prod
+LLM_ROUTING_POLICY=local_first
+LLM_ENABLE_CLOUD_FALLBACK_NONPROD=false
+AI_GATEWAY_SHARED_TOKEN=change_me
+LLM_LOCAL_TIMEOUT_SEC=30   # first-byte timeout
+LLM_CLOUD_TIMEOUT_SEC=60
+
+# local / cloud 上游
+LLM_BASE_URL_LOCAL=
+LLM_API_KEY_LOCAL=
+LLM_MODEL_LOCAL=qwen-plus
+LLM_BASE_URL_CLOUD=
+LLM_API_KEY_CLOUD=
+LLM_MODEL_CLOUD=qwen-plus
+
 # 基础开关
 GRAPH_RAG_ENABLED=true
 GRAPH_RAG_INDEX_PATH=app/data/graphrag_index.json
@@ -59,7 +76,20 @@ GRAPH_RAG_FINAL_TOP_K=8
 GRAPH_RAG_MAX_CONTEXT_CHARS=4000
 ```
 
-## 4. 调用示例
+## 4. 安全路由头与冲突策略
+
+- 请求头：`X-Request-ID`、`X-Privacy-Level`、`X-LLM-Route`、`X-AI-Gateway-Token`
+- JSON 与 Header 同时给定且冲突时：直接 `400`（`CONFLICTING_ROUTING_PARAMS`）
+- 非可信调用方请求 `public` 或 `cloud/auto`：返回 `403`（`ROUTING_FORBIDDEN`）
+- `request_id` 兜底：若未透传 `X-Request-ID`，AI Service 自动生成并记录 `request_id_source=generated`
+
+## 5. Embedding 继承与兜底
+
+- `/v1/chat/hybrid` 中 embedding 路由继承 chat 路由，不允许 embedding 独立越权。
+- 当 chat 路由满足云兜底条件（`public + trusted + policy/env`）时，embedding 本地失败可复用同一授权边界尝试 cloud。
+- private 请求只允许本地 embedding，不会转云。
+
+## 6. 调用示例
 
 ### 普通 RAG（关键词检索）
 ```json
@@ -88,12 +118,12 @@ X-User-Id: student-001
 X-User-Role: student
 ```
 
-## 5. ACL 过滤规则
+## 7. ACL 过滤规则
 
 - **教师/管理员**：可检索课程内所有内容
 - **学生**：只能检索自己提交的作业内容 + 公共文档
 
-## 6. 架构
+## 8. 架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

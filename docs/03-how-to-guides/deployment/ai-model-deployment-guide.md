@@ -15,17 +15,17 @@
 
 ## 0. 选择部署形态（推荐）
 
-本仓库的 AI 服务（`code/ai_service/app/main.py`）通过 OpenAI-compatible 接口调用上游模型：
-- `LLM_BASE_URL`（不包含 `/v1` 后缀）
-- `LLM_API_KEY`
-- `LLM_MODEL`
+本仓库的 AI 服务（`code/ai_service/app/main.py`）支持 local/cloud 双上游（OpenAI-compatible）：
+- local：`LLM_BASE_URL_LOCAL` / `LLM_API_KEY_LOCAL` / `LLM_MODEL_LOCAL`
+- cloud：`LLM_BASE_URL_CLOUD` / `LLM_API_KEY_CLOUD` / `LLM_MODEL_CLOUD`
+- 策略：`LLM_ROUTING_POLICY=local_first`（生产固定）
 
 因此最省改动的方式是：
 1) 在 GPU 机器上启动一个 **OpenAI-compatible 的本地推理服务**（例如 vLLM/TGI 等）  
-2) 把 `LLM_BASE_URL` 指向该推理服务  
+2) 把 `LLM_BASE_URL_LOCAL` 指向该推理服务  
 3) 用 `docker compose` 启动项目其他服务
 
-> 如果你暂时不自建推理服务，也可以先把 `LLM_BASE_URL` 配成云厂商/第三方的 OpenAI-compatible API，等 LoRA 产物稳定后再切本地。
+> 如果你暂时不自建推理服务，也可以先把 `LLM_BASE_URL_LOCAL` 配成云厂商/第三方 API；`LLM_BASE_URL_CLOUD` 仅用于受控 fallback。
 
 ---
 
@@ -195,9 +195,9 @@ AutoTokenizer.from_pretrained(base).save_pretrained(out)
 ## 6. 本地 HF 推理服务（OpenAI-compatible）
 
 你需要一个对外提供 `POST /v1/chat/completions` 的服务，然后让 AI Service 指向它：
-- `LLM_BASE_URL=http://<llm-host>:<port>`
-- `LLM_API_KEY=任意非空`（本地服务一般不校验，但本项目会检查是否为空）
-- `LLM_MODEL=<服务端暴露的 model 名称>`
+- `LLM_BASE_URL_LOCAL=http://<llm-host>:<port>`
+- `LLM_API_KEY_LOCAL=任意非空`（本地服务一般不校验，但本项目会检查是否为空）
+- `LLM_MODEL_LOCAL=<服务端暴露的 model 名称>`
 
 启动完成后先做冒烟测试（示例）：
 ```bash
@@ -250,10 +250,23 @@ cp code/.env.example code/.env
 
 关键项（示例）：
 ```env
-# AI service upstream（指向你自建的 HF 推理服务）
-LLM_BASE_URL=http://<llm-host>:<port>
-LLM_API_KEY=dummy
-LLM_MODEL=<your-model-name>
+# 路由策略与网关信任
+APP_ENV=prod
+LLM_ROUTING_POLICY=local_first
+AI_GATEWAY_SHARED_TOKEN=change_me_gateway_token
+LLM_ENABLE_CLOUD_FALLBACK_NONPROD=false
+LLM_LOCAL_TIMEOUT_SEC=30
+LLM_CLOUD_TIMEOUT_SEC=60
+
+# local upstream（指向你自建 HF 推理服务）
+LLM_BASE_URL_LOCAL=http://<llm-host>:<port>
+LLM_API_KEY_LOCAL=dummy
+LLM_MODEL_LOCAL=<your-model-name>
+
+# cloud upstream（仅用于 public 请求受控兜底）
+LLM_BASE_URL_CLOUD=https://<cloud-endpoint>
+LLM_API_KEY_CLOUD=<cloud-key>
+LLM_MODEL_CLOUD=<cloud-model>
 
 # GraphRAG（可选但推荐）
 GRAPH_RAG_ENABLED=true

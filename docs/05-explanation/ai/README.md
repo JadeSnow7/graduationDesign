@@ -4,7 +4,8 @@
 
 ## 1. 当前能力概览（与代码一致）
 
-- **上游模型接入**：AI Service 通过 OpenAI-compatible ChatCompletions 调用上游模型（`LLM_BASE_URL/LLM_API_KEY/LLM_MODEL`）。
+- **双端推理路由（本地优先）**：默认 `private + local`；仅可信网关可授权 `public` 与云路由，Header/JSON 冲突直接 `400`，并输出结构化审计日志（`request_id/request_id_source/privacy/route/final_upstream/fallback_reason`）。
+- **上游模型接入**：AI Service 支持 local/cloud 双上游（`LLM_BASE_URL_LOCAL/*`、`LLM_BASE_URL_CLOUD/*`），生产固定 `LLM_ROUTING_POLICY=local_first`。
 - **GraphRAG（可追溯引用）**：关键词检索 + 图扩展；并支持混合检索（关键词+语义）与索引热更新。
 - **写作类型感知分析**：面向文献综述/课程论文/学位论文/摘要的 rubric 输出（结构化维度评分 + 建议）。
 - **引导式学习（guided）**：生成学习路径并以苏格拉底式提问引导学生；会话内记录薄弱点与进度。
@@ -25,3 +26,10 @@
 7. `docs/05-explanation/ai/tool-calling.md`（工具调用机制与扩展点）
 8. `docs/05-explanation/ai/learning-analytics.md`（学习状态分析与画像）
 9. `docs/05-explanation/ai/papers.md`（参考论文列表：资料整理与调研入口）
+
+## 3. 路由与合规基线
+
+- 默认值：未显式声明时按 `privacy=private`、`route=local` 处理。
+- 信任边界：只有携带 `X-AI-Gateway-Token` 且通过 `AI_GATEWAY_SHARED_TOKEN` 校验的请求，才允许 `public`/`cloud`/`auto`。
+- 冲突策略：`X-Privacy-Level` 与 JSON `privacy`、`X-LLM-Route` 与 JSON `route` 冲突时返回 `400`（`CONFLICTING_ROUTING_PARAMS`）。
+- 非生产兜底：`APP_ENV!=prod` 时默认 `LLM_ENABLE_CLOUD_FALLBACK_NONPROD=false`，即使 `public` 也不自动兜底云端。
