@@ -1,13 +1,13 @@
 # 模型训练与部署指南（HF 推理 + GraphRAG，可选工具调用）
 
 本指南基于仓库现有的训练计划与脚本：
-- 训练路线：`docs/ai/post-training-finetuning-plan.md`
-- 数据规范：`docs/ai/training-data-spec.md`
-- 环境建议：`docs/ai/training-environment.md`
+- 训练路线：`docs/05-explanation/ai/post-training-finetuning-plan.md`
+- 数据规范：`docs/05-explanation/ai/training-data-spec.md`
+- 环境建议：`docs/05-explanation/ai/training-environment.md`
 - 训练脚本：`code/ai_service/training/`
-- 数据蒸馏：`docs/ai/distillation.md`
-- 引导式学习：`docs/ai/guided-learning.md`
-- 在线检索：`docs/ai/graph-rag.md`
+- 数据蒸馏：`docs/05-explanation/ai/distillation.md`
+- 引导式学习：`docs/05-explanation/ai/guided-learning.md`
+- 在线检索：`docs/05-explanation/ai/graph-rag.md`
 
 目标：把 **Qwen3 8B** 训练出的 LoRA/QLoRA 产物接入本项目的 **AI Service**（`code/ai_service`），并与后端/前端一起部署。
 
@@ -61,7 +61,7 @@ python -c "import bitsandbytes as bnb; print('bitsandbytes ok')"
 
 ## 2. 数据准备（100k 的推荐组织方式）
 
-数据格式以 JSONL 为主，字段见 `docs/ai/training-data-spec.md`。
+数据格式以 JSONL 为主，字段见 `docs/05-explanation/ai/training-data-spec.md`。
 
 推荐按能力拆分（与你的目标：tool + rag + 引导风格一致）：
 ```
@@ -236,7 +236,7 @@ GRAPH_RAG_ENABLED=true
 GRAPH_RAG_INDEX_PATH=app/data/graphrag_index.json
 ```
 
-> 以上配置只启用“关键词 + 图扩展”的 RAG（无需向量库/embedding）。如需混合检索（`/v1/chat/hybrid`），再参考 `docs/ai/graph-rag.md` 配置 `EMBEDDING_PROVIDER/VECTOR_STORE_PATH`。
+> 以上配置只启用“关键词 + 图扩展”的 RAG（无需向量库/embedding）。如需混合检索（`/v1/chat/hybrid`），再参考 `docs/05-explanation/ai/graph-rag.md` 配置 `EMBEDDING_PROVIDER/VECTOR_STORE_PATH`。
 
 ---
 

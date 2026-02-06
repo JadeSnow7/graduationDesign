@@ -6,7 +6,7 @@
 
 - 需求与功能：`docs/requirements.md`
 - API 规范：`docs/api/README.md`、`docs/api/authentication.md`、`docs/api/course-management.md`、`docs/api/ai-services.md`、`docs/api/simulation-services.md`、`docs/api/legacy-api.md`
-- 架构设计：`docs/architecture/system-overview.md`、`docs/architecture/component-design.md`、`docs/architecture/README.md`、`docs/architecture/legacy-architecture.md`
+- 架构设计：`docs/05-explanation/system-design.md`、`docs/05-explanation/architecture/component-design.md`、`docs/05-explanation/architecture/README.md`、`docs/05-explanation/architecture/legacy-architecture.md`
 - 前端实现参考：`code/frontend-react/`（React + Vite），路由与页面见 `code/frontend-react/src/App.tsx` 与 `code/frontend-react/src/pages/`
 - 前端技术栈说明：`docs/development/README.md`
 
@@ -129,5 +129,5 @@
 ## 6. 待补充与一致性注意
 
 - `docs/api/README.md` 引用的 `calculation-services.md` 在仓库内不存在，数值计算仅在 `docs/api/legacy-api.md` 描述。
-- `docs/architecture/README.md` 提到的 `data-architecture.md` 与 `security-architecture.md` 未在仓库中发现。
+- `docs/05-explanation/architecture/README.md` 提到的 `data-architecture.md` 与 `security-architecture.md` 未在仓库中发现。
 - 前端已调用 `/calc/*` 原型接口，建议补齐正式 API 文档并统一到 `docs/api/`。

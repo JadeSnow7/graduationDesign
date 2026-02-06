@@ -20,7 +20,7 @@
 **目标**：形成“目标态接口 + 权限矩阵 + 响应规范”。
 
 **产出**：
-- `docs/architecture/api-permission-matrix.md`
+- `docs/05-explanation/rbac-model.md`
 - 统一响应结构与错误码规范
 - OpenAPI 目标草案（若未完成，至少列出关键路径）
 

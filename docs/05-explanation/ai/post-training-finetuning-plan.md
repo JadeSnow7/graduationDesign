@@ -472,7 +472,7 @@ METRICS = {
 - [ ] Python 环境已安装依赖：
   - `torch`, `transformers`, `datasets`, `peft`, `accelerate`, `bitsandbytes`
 
-环境准备详见：`docs/ai/training-environment.md`
+环境准备详见：`docs/05-explanation/ai/training-environment.md`
 
 > 如未安装依赖，可用：`pip install torch transformers datasets peft accelerate bitsandbytes`
 

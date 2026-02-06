@@ -91,7 +91,7 @@
 }
 ```
 
-> 工具集合与执行器见 `code/ai_service/app/tools.py`。写作课建议扩展“字数/结构/引用格式检查”等可验证工具（见 `docs/ai/tool-calling.md`）。
+> 工具集合与执行器见 `code/ai_service/app/tools.py`。写作课建议扩展“字数/结构/引用格式检查”等可验证工具（见 `docs/05-explanation/ai/tool-calling.md`）。
 
 ## 3) 引导式学习（guided）
 
@@ -132,5 +132,5 @@
 }
 ```
 
-更多机制说明见 `docs/ai/guided-learning.md`。
+更多机制说明见 `docs/05-explanation/ai/guided-learning.md`。
 

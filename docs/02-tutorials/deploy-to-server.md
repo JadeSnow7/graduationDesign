@@ -102,5 +102,5 @@ lsof -i :8080
 
 ## 下一步
 
-- [配置监控](../03-how-to-guides/setup-monitoring.md)
-- [配置备份](../03-how-to-guides/backup-database.md)
+- [配置监控](../03-how-to-guides/deployment/monitoring.md)
+- [配置备份](../03-how-to-guides/deployment/backup-recovery.md)

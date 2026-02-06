@@ -20,7 +20,7 @@
 
 脚本：`scripts/ai/distill_data.py`
 
-输入：chat-style JSONL（遵循 `docs/ai/training-data-spec.md`，包含 `messages`）  
+输入：chat-style JSONL（遵循 `docs/05-explanation/ai/training-data-spec.md`，包含 `messages`）  
 输出：prompt/response JSONL（更适合做轻量语言模型 smoke 与数据去重统计）
 
 示例：
@@ -67,5 +67,5 @@ python3 scripts/ai/train_smoke.py \
 - **蒸馏与 smoke**：解决“数据是否能用、链路是否可复现”的工程风险。
 - **LoRA/QLoRA**：解决“模型在写作课 rubric / 引导风格 / RAG 引用规范上的稳定性”。
 
-训练入口参考：`docs/deployment/ai-model-deployment-guide.md` 与 `code/ai_service/training/README.md`。
+训练入口参考：`docs/03-how-to-guides/deployment/ai-model-deployment-guide.md` 与 `code/ai_service/training/README.md`。
 
