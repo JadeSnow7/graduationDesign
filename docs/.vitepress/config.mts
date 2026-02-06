@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
     title: "智能教学平台",
     description: "基于 AI 的以学生为中心的智能教学系统",
+    base: '/graduationDesign/',
     // srcDir removed, default is root of where vitepress is run (which is docs/ based on script)
 
     themeConfig: {
