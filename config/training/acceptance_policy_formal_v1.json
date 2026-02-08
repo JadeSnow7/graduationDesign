@@ -1,0 +1,18 @@
+{
+  "policy_version": "acceptance_policy_formal_v1",
+  "phase_thresholds": {
+    "min_benchmark_samples": 60,
+    "required_seed_count": 3,
+    "required_metrics": {
+      "key_point_coverage": 0.8,
+      "refusal_accuracy": 0.9,
+      "response_format": 0.9
+    },
+    "stability_std_max": 0.05
+  },
+  "tracking_thresholds": {
+    "tool_call_accuracy": 0.4,
+    "citation_accuracy": 0.6
+  },
+  "doc_sync_requires_phase_thresholds": true
+}

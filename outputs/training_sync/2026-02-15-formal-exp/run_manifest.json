@@ -1,0 +1,27 @@
+{
+  "version": "run_manifest_v1",
+  "batch": "2026-02-15-formal-exp",
+  "remote_root": "",
+  "runs": [
+    {
+      "run_id": "style_A_s42_20260208T161820Z",
+      "seed": 42,
+      "stage": "style",
+      "train_files": "data/training/processed/style_sft.jsonl",
+      "benchmark_file": "data/training/eval/benchmark_formal_v1.jsonl",
+      "adapter_path": "/Users/huaodong/graduationDesign/outputs/adapter/formal/2026-02-15-formal-exp/style_A_s42_20260208T161820Z/adapter_style",
+      "pred_file": "/Users/huaodong/graduationDesign/outputs/training_sync/2026-02-15-formal-exp/runs/style_A_s42_20260208T161820Z/predictions_style.jsonl",
+      "eval_report_json": "/Users/huaodong/graduationDesign/outputs/training_sync/2026-02-15-formal-exp/runs/style_A_s42_20260208T161820Z/eval_report_style.json",
+      "metrics": {},
+      "status": "DRY_RUN",
+      "started_at": "2026-02-08T16:18:20.751643+00:00",
+      "ended_at": "2026-02-08T16:18:20.819690+00:00",
+      "preset": "A",
+      "logs": {
+        "train": "/Users/huaodong/graduationDesign/outputs/training_sync/2026-02-15-formal-exp/runs/style_A_s42_20260208T161820Z/train.log",
+        "predict": "/Users/huaodong/graduationDesign/outputs/training_sync/2026-02-15-formal-exp/runs/style_A_s42_20260208T161820Z/predict.log",
+        "evaluate": "/Users/huaodong/graduationDesign/outputs/training_sync/2026-02-15-formal-exp/runs/style_A_s42_20260208T161820Z/evaluate.log"
+      }
+    }
+  ]
+}

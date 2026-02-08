@@ -1,0 +1,57 @@
+{
+  "batch": "2026-02-15-formal-exp",
+  "stage": "all",
+  "successful_run_count": 0,
+  "considered_run_ids": [],
+  "phase_gate": {
+    "required_seed_count": 3,
+    "stability_std_max": 0.05,
+    "metrics": [
+      {
+        "name": "key_point_coverage",
+        "values": [],
+        "mean": 0.0,
+        "std": 0.0,
+        "threshold": 0.8,
+        "pass": false
+      },
+      {
+        "name": "refusal_accuracy",
+        "values": [],
+        "mean": 0.0,
+        "std": 0.0,
+        "threshold": 0.9,
+        "pass": false
+      },
+      {
+        "name": "response_format",
+        "values": [],
+        "mean": 0.0,
+        "std": 0.0,
+        "threshold": 0.9,
+        "pass": false
+      }
+    ],
+    "pass": false
+  },
+  "tracking_gate": {
+    "metrics": [
+      {
+        "name": "tool_call_accuracy",
+        "values": [],
+        "mean": 0.0,
+        "threshold": 0.4,
+        "pass": false
+      },
+      {
+        "name": "citation_accuracy",
+        "values": [],
+        "mean": 0.0,
+        "threshold": 0.6,
+        "pass": false
+      }
+    ],
+    "pass": false
+  },
+  "can_sync_docs": false
+}

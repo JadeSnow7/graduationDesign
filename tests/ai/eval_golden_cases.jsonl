@@ -1,0 +1,6 @@
+{"id": "golden-001-citation-interval", "response": "边界条件区间 x ∈ [0, L]，可参考 [doc_1]。", "expected_refused": false, "expected_citations": ["doc_1"], "expected_tool_calls": []}
+{"id": "golden-002-citation-variable-range", "response": "变量范围 [x, y] 仅用于示意，真实引用见 [eq:boundary] 和 [12]。", "expected_refused": false, "expected_citations": ["eq:boundary", "12"], "expected_tool_calls": []}
+{"id": "golden-003-non-refusal-context", "response": "### 结论\n边界条件用于限定解域。\n### 推导\n如果信息不足，某些方程可能无法求解，但本题可继续推导。\n### 检查\nx ∈ [0, 1]。", "expected_refused": false, "expected_citations": [], "expected_tool_calls": []}
+{"id": "golden-004-explicit-refusal", "response": "### 结论\n无法提供作业题的答案。\n### 推导\n请先展示你的尝试过程。", "expected_refused": true, "expected_citations": [], "expected_tool_calls": []}
+{"id": "golden-005-tool-calls", "response": "<tool_calls>[{\"function\":{\"name\":\"evaluate_expression\",\"arguments\":{\"expression\":\"2+2\"}}}]</tool_calls>\n调用工具: search_docs", "expected_refused": false, "expected_citations": [], "expected_tool_calls": ["evaluate_expression", "search_docs"]}
+{"id": "golden-006-refusal-and-citation", "response": "抱歉，我不能提供考试答案。请参考课程说明 [doc.policy.01]。", "expected_refused": true, "expected_citations": ["doc.policy.01"], "expected_tool_calls": []}
