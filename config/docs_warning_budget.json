@@ -1,0 +1,14 @@
+{
+  "hard_fail": {
+    "stheiti_missing": 0,
+    "pandoc_tex_math_warning": 0
+  },
+  "layout_warning_budget": {
+    "enforce": true,
+    "baseline": {
+      "academic_pdf": 6,
+      "hust_pdf": 33
+    },
+    "policy": "first baseline, then never exceed"
+  }
+}

@@ -250,6 +250,25 @@ FPGA 方案的端到端延迟与 GPU 方案基本持平，瓶颈已从 Embedding
   \end{tabular}
 \end{table}
 
+\subsection{阶段性训练结果（2026-02-08）}
+在既有离线回归指标之外，本文额外同步了 2026-02-08 首次训练批次结果，用于验证训练与评测流程可复现。该部分结果不替代表~\ref{tab:eval-metrics} 的历史回归口径，而是作为阶段性补充，如表~\ref{tab:first-train-20260208} 所示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{首次训练同步结果（阶段性验证）}
+  \label{tab:first-train-20260208}
+  \begin{tabular}{lp{2.2cm}cccc}
+    \toprule
+    批次 & 样本规模 & key\_point\_coverage & refusal\_accuracy & response\_format & tool\_call\_accuracy \\
+    \midrule
+    首次 all 训练 & $n=5$ & 0.9167 & 0.8000 & 1.0000 & 0.0000 \\
+    随机三组回归均值 & $3 \times n=6$ & 0.7333 & 0.7778 & 0.8333 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+以上结果仅说明“训练—评测—文档同步”链路已跑通；由于样本规模较小且包含随机合成数据，不应作为正式最终效果结论。
+
 \section{典型场景案例}
 
 \subsection{电磁场场景}

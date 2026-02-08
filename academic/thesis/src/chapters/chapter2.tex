@@ -64,6 +64,25 @@
   \end{tabular}
 \end{table}
 
+\subsection{阶段性训练结果同步（2026-02-08）}
+在完成训练脚本与评测脚本的端到端连通验证后，项目于 2026-02-08 执行了首次 \texttt{all} 多任务训练评测（小样本）与随机三组回归测试，并将结果同步为统一事实源。指标如表~\ref{tab:stage-train-20260208} 所示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{阶段性训练结果（2026-02-08，同步批次）}
+  \label{tab:stage-train-20260208}
+  \begin{tabular}{lp{2.0cm}cccc}
+    \toprule
+    评测批次 & 样本规模 & key\_point\_coverage & refusal\_accuracy & response\_format & tool\_call\_accuracy \\
+    \midrule
+    首次 all 训练 & $n=5$ & 0.9167 & 0.8000 & 1.0000 & 0.0000 \\
+    随机三组回归均值 & $3 \times n=6$ & 0.7333 & 0.7778 & 0.8333 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+需要说明的是，上述结果仅用于证明“训练—评测—文档同步”链路可复现，属于阶段性验证数据，不作为本文正式实验结论。后续正式实验将在真实 \texttt{style/tool/rag} 数据闭环后重新训练并报告主结果。
+
 \section{系统原型实现与企业微信集成}
 平台前端采用 React + TypeScript 实现 Web 客户端，并提供基于 Expo 的移动端实现；后端采用 Go/Gin 提供课程、写作与学习事件相关 API，并通过 JWT 与 RBAC 实现权限治理；AI 服务基于 FastAPI，实现对话、写作分析、GraphRAG 与工具调用等能力，并对接 OpenAI-compatible 上游推理服务。原型部署层面提供 Docker Compose 配置以便快速启动与验证；对于企业微信等场景，系统预留 OAuth 与组织对接能力，以支持后续在真实教学流程中落地。
 

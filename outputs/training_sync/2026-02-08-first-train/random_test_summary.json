@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-02-08",
+  "run_manifest": "/root/autodl-tmp/graduationDesign/random_runs/run_manifest.tsv",
+  "groups": [
+    {
+      "group": "group_01",
+      "train_status": "SUCCESS",
+      "eval_status": "SUCCESS",
+      "duration_sec": 171,
+      "report_json": "/root/autodl-tmp/graduationDesign/random_runs/group_01/eval_report_all.json",
+      "report_md": "/root/autodl-tmp/graduationDesign/random_runs/group_01/eval_report_all.md",
+      "predictions": "/root/autodl-tmp/graduationDesign/random_runs/group_01/predictions_all.jsonl",
+      "sample_count": 6,
+      "key_point_coverage": 0.7333333333333333,
+      "refusal_accuracy": 0.6666666666666666,
+      "response_format": 0.8333333333333334,
+      "tool_call_accuracy": 0.0
+    },
+    {
+      "group": "group_02",
+      "train_status": "SUCCESS",
+      "eval_status": "SUCCESS",
+      "duration_sec": 187,
+      "report_json": "/root/autodl-tmp/graduationDesign/random_runs/group_02/eval_report_all.json",
+      "report_md": "/root/autodl-tmp/graduationDesign/random_runs/group_02/eval_report_all.md",
+      "predictions": "/root/autodl-tmp/graduationDesign/random_runs/group_02/predictions_all.jsonl",
+      "sample_count": 6,
+      "key_point_coverage": 0.7333333333333333,
+      "refusal_accuracy": 0.8333333333333334,
+      "response_format": 0.8333333333333334,
+      "tool_call_accuracy": 0.0
+    },
+    {
+      "group": "group_03",
+      "train_status": "SUCCESS",
+      "eval_status": "SUCCESS",
+      "duration_sec": 170,
+      "report_json": "/root/autodl-tmp/graduationDesign/random_runs/group_03/eval_report_all.json",
+      "report_md": "/root/autodl-tmp/graduationDesign/random_runs/group_03/eval_report_all.md",
+      "predictions": "/root/autodl-tmp/graduationDesign/random_runs/group_03/predictions_all.jsonl",
+      "sample_count": 6,
+      "key_point_coverage": 0.7333333333333333,
+      "refusal_accuracy": 0.8333333333333334,
+      "response_format": 0.8333333333333334,
+      "tool_call_accuracy": 0.0
+    }
+  ],
+  "averages": {
+    "key_point_coverage": 0.7333333333333333,
+    "refusal_accuracy": 0.7777777777777778,
+    "response_format": 0.8333333333333334,
+    "tool_call_accuracy": 0.0
+  },
+  "total_groups": 3,
+  "all_success": true
+}
