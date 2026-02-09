@@ -1,0 +1,16 @@
+# Training sync whitelist (relative to repo root)
+scripts/remote_train_all.sh
+scripts/verify_training_ready.sh
+scripts/apply_training_sync_bundle.sh
+scripts/build_training_sync_bundle.sh
+scripts/training_sync_whitelist.txt
+code/ai_service/training/run_train.sh
+code/ai_service/training/train_lora.py
+code/ai_service/training/download_model.py
+code/ai_service/training/requirements.txt
+data/training/processed/style_sft_sample.jsonl
+data/training/processed/style_sft.jsonl
+data/training/processed/writing_sft.jsonl
+data/training/processed/all_sft.jsonl
+data/training/eval/style_benchmark.jsonl
+data/training/eval/writing_benchmark.jsonl
