@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-02-09T08:44:06.461079Z",
+  "style_sft_v3": {
+    "total": 52,
+    "parse_ok": true,
+    "field_complete": true,
+    "missing_fields": [],
+    "template_hit_count": 52,
+    "template_hit_rate": 1.0,
+    "template_fail_ids": []
+  },
+  "writing_sft_v3": {
+    "total": 30,
+    "parse_ok": true,
+    "field_complete": true,
+    "missing_fields": [],
+    "template_hit_count": 30,
+    "template_hit_rate": 1.0,
+    "template_fail_ids": []
+  },
+  "shadow_eval_style": {
+    "total": 5,
+    "parse_ok": true,
+    "field_complete": true,
+    "missing_fields": [],
+    "template_hit_count": 5,
+    "template_hit_rate": 1.0,
+    "template_fail_ids": []
+  },
+  "shadow_eval_writing": {
+    "total": 5,
+    "parse_ok": true,
+    "field_complete": true,
+    "missing_fields": [],
+    "template_hit_count": 5,
+    "template_hit_rate": 1.0,
+    "template_fail_ids": []
+  },
+  "all_sft_v3_count": 82,
+  "targets": {
+    "style_added": 24,
+    "writing_added": 18,
+    "style_total": 52,
+    "writing_total": 30,
+    "all_total": 82,
+    "shadow_eval_total": 10
+  }
+}

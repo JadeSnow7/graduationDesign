@@ -4,6 +4,7 @@ scripts/verify_training_ready.sh
 scripts/apply_training_sync_bundle.sh
 scripts/build_training_sync_bundle.sh
 scripts/quantization_feasibility.sh
+scripts/prepare_v3_training_assets.py
 scripts/training_sync_whitelist.txt
 code/ai_service/training/run_train.sh
 code/ai_service/training/train_lora.py
@@ -14,5 +15,19 @@ data/training/processed/style_sft_sample.jsonl
 data/training/processed/style_sft.jsonl
 data/training/processed/writing_sft.jsonl
 data/training/processed/all_sft.jsonl
+data/training/processed/style_sft_v3.jsonl
+data/training/processed/writing_sft_v3.jsonl
+data/training/processed/all_sft_v3.jsonl
+data/training/processed_v3/style_sft_sample.jsonl
+data/training/processed_v3/style_sft.jsonl
+data/training/processed_v3/writing_sft.jsonl
+data/training/processed_v3/all_sft.jsonl
 data/training/eval/style_benchmark.jsonl
 data/training/eval/writing_benchmark.jsonl
+data/training/eval/all_benchmark_legacy.jsonl
+data/training/eval/shadow_template_benchmark_v3.jsonl
+outputs/training_sync/2026-02-10-gap-analysis/all_failure_ids.json
+outputs/training_sync/2026-02-10-gap-analysis/all_failure_matrix.md
+outputs/training_sync/2026-02-10-gap-analysis/baseline_manifest.md
+outputs/training_sync/2026-02-10-gap-analysis/data_v3_validation.json
+outputs/training_sync/2026-02-10-gap-analysis/data_v3_validation.md
