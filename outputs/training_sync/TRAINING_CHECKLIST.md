@@ -3,6 +3,30 @@
 **日期**: 2026-02-08
 **服务器**: ssh -p 43821 root@connect.cqa1.seetacloud.com
 
+## V2.2 收尾检查（2026-02-09）
+
+### 后评估修复
+- [x] `eval_metrics.py` 已支持 legacy benchmark（messages-only）兼容评分
+- [x] writing 模板格式校验（问题诊断/改进建议/规范说明）已启用
+- [x] style/writing/all 后评估报告已补齐
+  - [x] `eval_report_style.json/.md`
+  - [x] `eval_report_writing.json/.md`
+  - [x] `eval_report_all.json/.md`
+
+### 量化可行性
+- [x] BnB 4bit（BitsAndBytesConfig）基座加载通过
+- [x] BnB 4bit + LoRA（style/multitask）推理通过
+- [x] GGUF 导出通过（`model-f16.gguf`、`model-q4_k_m.gguf`）
+- [x] `llama-cli` 烟测通过
+- [ ] `llama-cpp-python` 生成烟测通过（本轮为超时，已记录 open issue）
+- [ ] Ollama 烟测（远端未安装，记录 `SKIPPED_NOT_INSTALLED`）
+
+### 归档与备份
+- [x] `TRAINING_SUMMARY.md` 已更新（含环境指纹与量化结论）
+- [x] `ISSUES.md` 与 `issues.jsonl` 已双轨更新
+- [x] `WORKLOG.md` 已记录关键步骤与问题处置
+- [x] 权重备份目录已更新并重算 `SHA256SUMS.txt`
+
 ## 训练前准备 (Pre-Training)
 
 ### 本地准备

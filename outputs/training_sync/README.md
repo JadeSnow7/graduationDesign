@@ -38,6 +38,10 @@ export REMOTE_PROJECT_ROOT="/root/graduationDesign"
 3. [执行检查清单](./TRAINING_CHECKLIST.md)
 - 训练前/训练中/训练后检查项
 
+4. [2026-02-09 正式训练收尾报告](./2026-02-09-formal-train/final_closure_report.md)
+- 包含后评估修复结果、问题双轨记录、量化可行性测试结论（BnB + GGUF）
+- 对应远端运行目录：`run_20260209_132531`
+
 ## 快速开始
 
 ### 方式A：自动化执行（推荐）
