@@ -30,6 +30,20 @@
 
 ---
 
+## 文档状态矩阵
+
+> 基于 [Qwen3/Qwen3-VL 迁移基线（2026-02-09）](./05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09.md)
+
+| 主题 | 状态 | 文档路径 |
+|---|---|---|
+| NPU 分层部署 | ✓ 已同步 | [npu-tiered-deployment.md](./03-how-to-guides/deployment/npu-tiered-deployment.md) |
+| 模型路由策略 | ✓ 已同步 | [model-routing-policy.md](./05-explanation/ai/model-routing-policy.md) |
+| Plan 模式协作 | ✓ 已同步 | [plan-mode-workflow.md](./06-contributing/plan-mode-workflow.md) |
+| AI API 参考 | ✓ 已同步 | [ai.md](./04-reference/api/ai.md) |
+| 配置参考 | ✓ 已同步 | [configuration.md](./03-how-to-guides/deployment/configuration.md) |
+
+---
+
 ## 文档结构
 
 ```

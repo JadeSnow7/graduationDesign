@@ -9,3 +9,5 @@
 - [测试指南](./testing-guide.md)
 - [项目规范指南](./项目规范指南.md)
 - [模块设计模板](./模块设计文档模板.md)
+- [Plan 模式协作流程](./plan-mode-workflow.md)
+- [Plan 模式计划模板](./plan-mode-template.md)

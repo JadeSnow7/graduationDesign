@@ -330,8 +330,16 @@ curl -X POST http://localhost:8001/v1/chat/guided \
 ---
 
 ## 10. 推荐落地顺序（贴合仓库计划）
-1) 先把训练管线跑通：`sample` → `tool`/`rag`  
-2) 固定小规模回归集（200-500 条）与评测脚本（见 `code/ai_service/training/`）  
-3) 出一个可部署的 `adapter_multitask`（`run_train.sh all`）  
+1) 先把训练管线跑通：`sample` → `tool`/`rag`
+2) 固定小规模回归集（200-500 条）与评测脚本（见 `code/ai_service/training/`）
+3) 出一个可部署的 `adapter_multitask`（`run_train.sh all`）
 4) 上线时先只启用 Chat + GraphRAG；工具调用能力稳定后再启用 `/v1/chat_with_tools`
-5) 写作课场景建议把 `guided` 与“学习档案/薄弱点”联动，用于形成过程性辅导闭环
+5) 写作课场景建议把 `guided` 与"学习档案/薄弱点"联动，用于形成过程性辅导闭环
+
+---
+
+## 11. 相关文档
+
+- [NPU 分层部署策略](./npu-tiered-deployment.md) - 端侧 NPU 硬件分层与模型档位选择
+- [配置说明](./configuration.md) - 环境变量与配置项详解
+- [故障排查](./troubleshooting.md) - 常见部署问题与解决方案

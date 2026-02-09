@@ -7,6 +7,9 @@
 - [快速开始](/01-getting-started/quick-start)
 - [API 参考](/04-reference/api/)
 - [AI 能力说明](/05-explanation/ai/)
+- [NPU 分层部署](/03-how-to-guides/deployment/npu-tiered-deployment)
+- [模型路由策略](/05-explanation/ai/model-routing-policy)
+- [Plan 模式协作](/06-contributing/plan-mode-workflow)
 - [贡献与规范](/06-contributing/项目规范指南)
 
 ## 文档结构
@@ -23,5 +26,8 @@
 1. [环境要求](/01-getting-started/prerequisites)
 2. [快速开始](/01-getting-started/quick-start)
 3. [API 参考](/04-reference/api/)
-4. [GraphRAG 说明](/05-explanation/ai/graph-rag)
-5. [代码规范](/06-contributing/code-style)
+4. [模型路由策略](/05-explanation/ai/model-routing-policy)
+5. [NPU 分层部署](/03-how-to-guides/deployment/npu-tiered-deployment)
+6. [GraphRAG 说明](/05-explanation/ai/graph-rag)
+7. [Plan 模式协作](/06-contributing/plan-mode-workflow)
+8. [代码规范](/06-contributing/code-style)

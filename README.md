@@ -286,3 +286,5 @@ WECOM_SECRET=your_secret
 ---
 
 **快速链接**: [代码库](code/) | [学术材料](academic/) | [技术文档](docs/) | [静态资源](assets/) | [更新日志](CHANGELOG.md)
+
+**文档站点**: [在线文档](https://jadesnow7.github.io/graduationDesign/) | [NPU 分层部署](docs/03-how-to-guides/deployment/npu-tiered-deployment.md) | [模型路由策略](docs/05-explanation/ai/model-routing-policy.md) | [Plan 模式协作](docs/06-contributing/plan-mode-workflow.md)

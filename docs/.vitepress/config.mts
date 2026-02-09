@@ -49,6 +49,18 @@ export default defineConfig({
                         { text: 'CI/CD 架构', link: '/03-how-to-guides/ci-cd-workflow-architecture' },
                         { text: '部署指南总览', link: '/03-how-to-guides/deployment/' }
                     ]
+                },
+                {
+                    text: '部署指南',
+                    items: [
+                        { text: '环境准备', link: '/03-how-to-guides/deployment/environment-setup' },
+                        { text: '配置说明', link: '/03-how-to-guides/deployment/configuration' },
+                        { text: 'AI 模型部署', link: '/03-how-to-guides/deployment/ai-model-deployment-guide' },
+                        { text: 'NPU 分层部署', link: '/03-how-to-guides/deployment/npu-tiered-deployment' },
+                        { text: 'Docker 部署', link: '/03-how-to-guides/deployment/docker-deployment' },
+                        { text: '生产部署', link: '/03-how-to-guides/deployment/production-deployment' },
+                        { text: '故障排查', link: '/03-how-to-guides/deployment/troubleshooting' }
+                    ]
                 }
             ],
             '/04-reference/': [
@@ -93,6 +105,16 @@ export default defineConfig({
                         { text: '前端交互', link: '/05-explanation/frontend-api-architecture-interaction' },
                         { text: '跨平台迁移', link: '/05-explanation/cross-platform-migration-plan' }
                     ]
+                },
+                {
+                    text: 'AI 机制',
+                    items: [
+                        { text: '模型路由策略', link: '/05-explanation/ai/model-routing-policy' },
+                        { text: 'Qwen3-VL 迁移基线', link: '/05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09' },
+                        { text: 'GraphRAG', link: '/05-explanation/ai/graph-rag' },
+                        { text: '引导式学习', link: '/05-explanation/ai/guided-learning' },
+                        { text: '工具调用', link: '/05-explanation/ai/tool-calling' }
+                    ]
                 }
             ],
             '/06-contributing/': [
@@ -105,6 +127,13 @@ export default defineConfig({
                         { text: '项目规范', link: '/06-contributing/项目规范指南' },
                         { text: '测试指南', link: '/06-contributing/testing-guide' },
                         { text: '模块设计模板', link: '/06-contributing/模块设计文档模板' }
+                    ]
+                },
+                {
+                    text: '协作流程',
+                    items: [
+                        { text: 'Plan 模式协作流程', link: '/06-contributing/plan-mode-workflow' },
+                        { text: 'Plan 模式计划模板', link: '/06-contributing/plan-mode-template' }
                     ]
                 }
             ],

@@ -58,6 +58,60 @@
 - 客户端应累积 `content` 字段（部分模型可能同时返回 `reasoning` 字段）
 - 结束事件通常为：`data: {"type":"done"}`
 
+## 1.5) AI 多模态对话
+
+**接口地址**：`POST /api/v1/ai/chat/multimodal`
+
+> 兼容策略：`/api/v1/ai/chat` 保持不变；多模态能力通过新增端点提供。  
+> 该端点默认受 `AI_MULTIMODAL_ENABLED=false` 控制，未启用时返回 `FEATURE_DISABLED`。
+
+**请求参数**：
+```json
+{
+  "mode": "tutor",
+  "model_family": "auto",
+  "messages": [
+    {
+      "role": "user",
+      "content": "请解释图中结构",
+      "parts": [
+        { "type": "image_url", "url": "https://example.com/figure.png" }
+      ]
+    }
+  ],
+  "stream": false
+}
+```
+
+`model_family` 取值：
+- `auto`：默认；当请求包含 `image_url/video_url` 时自动路由到 `qwen3_vl`
+- `qwen3`：强制文本模型
+- `qwen3_vl`：强制视觉模型
+
+**路由规则：**
+- `model_family=auto` + `needs_vision=true` → `qwen3_vl`
+- `model_family=auto` + `needs_vision=false` → `qwen3`
+- `model_family=qwen3` + `needs_vision=true` → 返回错误 `MODEL_NOT_SUPPORT_VISION`
+- 多模态失败不跨家族回退（详见 [模型路由策略](../../05-explanation/ai/model-routing-policy.md)）
+
+**错误码：**
+| 错误码 | 场景 | HTTP 状态码 |
+|---|---|---|
+| `FEATURE_DISABLED` | `AI_MULTIMODAL_ENABLED=false` | 403 |
+| `MODEL_NOT_SUPPORT_VISION` | 文本模型收到视觉请求 | 400 |
+| `UPSTREAM_UNAVAILABLE` | 推理服务不可达 | 503 |
+
+**响应（非流式）**：
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "……",
+    "model": "qwen3-vl"
+  }
+}
+```
+
 ## 2) AI 对话（带工具调用）
 
 **接口地址**：`POST /api/v1/ai/chat_with_tools`
@@ -133,3 +187,9 @@
 ```
 
 更多机制说明见 `docs/05-explanation/ai/guided-learning.md`。
+
+## 相关文档
+
+- [模型路由策略](../../05-explanation/ai/model-routing-policy.md) - 路由规则与 fallback 边界
+- [NPU 分层部署策略](../../03-how-to-guides/deployment/npu-tiered-deployment.md) - 端侧部署配置
+- [OpenAPI 定义](./openapi.yaml) - 完整的 API 契约定义
