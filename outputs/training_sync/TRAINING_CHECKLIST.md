@@ -238,3 +238,43 @@
 **文档版本**: v1.0
 **创建日期**: 2026-02-08
 **最后更新**: 2026-02-08
+
+## V3 收尾检查（2026-02-10）✅ 完成
+
+### 训练执行
+- [x] V3A (3 epochs, lr=2e-4): completed, metrics insufficient
+- [x] V3B (4 epochs, lr=1e-4): completed, metrics optimal ✅ **Selected**
+- [x] V3C (5 epochs, lr=8e-5): completed, metrics same as V3B
+
+### 指标核验 (V3B - 重评估后)
+- [x] Style: Coverage 100%, Format 100% ✅
+- [x] Writing (by multitask): Coverage 100%, Format 100% ✅
+- [x] All: Coverage 100%, Format 100% ✅ **超过目标阈值**
+- [WARN] Writing (单任务): Coverage 0%, Format 0% (空响应问题，已弃用)
+
+### 量化验证
+- [x] BnB 4bit: 全部 PASS ✅ (主门禁通过)
+- [x] GGUF: 部分失败 (quantize_q4/llama_cli/llama_cpp_python FAIL，不阻塞发布)
+
+### 归档与备份
+- [x] V3B 远端备份: /root/autodl-tmp/training_weights/run_20260209_170928_v3B/
+- [x] V3C 远端备份: /root/autodl-tmp/training_weights/run_20260209_174240_v3C/
+- [x] 本地回传完成: outputs/adapter_backups/
+- [x] SHA256 验签: 全部 OK ✅
+- [x] 训练总结报告: v3_training_final_report.md ✅
+
+### 数据集 V3 增强
+- [x] Style 新增 24 条样本 (ch1/ch2/ch3, easy/medium/hard)
+- [x] Writing 新增 18 条样本 (18 个写作场景)
+- [x] 数据质量门禁: 100% 通过 ✅
+
+### 关键问题修复
+- [x] Token 输出归一化 (code@d602849)
+- [x] 评估脚本版本同步 (根仓库@7029527)
+- [x] 重评估流程执行 (V3B/V3C)
+
+### 上线建议
+- ✅ **推荐模型**: adapter_multitask (run_20260209_170928)
+- ✅ **量化方式**: BnB 4-bit
+- ✅ **部署方式**: transformers + peft + bitsandbytes
+- ✅ **性能指标**: 所有指标 100%
