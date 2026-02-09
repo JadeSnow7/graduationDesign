@@ -4,6 +4,58 @@
 
 set -euo pipefail
 
+usage() {
+    cat <<'EOF'
+Usage:
+  bash scripts/verify_training_ready.sh [--gpu-gate strict|warn|off]
+
+Options:
+  --gpu-gate <mode>   GPU driver gate level:
+                      strict: missing/broken nvidia-smi => error (default)
+                      warn:   missing/broken nvidia-smi => warning
+                      off:    skip GPU driver gate
+  -h, --help          Show this help message
+EOF
+}
+
+GPU_GATE="strict"
+while [ $# -gt 0 ]; do
+    case "$1" in
+      --gpu-gate)
+        if [ $# -lt 2 ] || [ -z "${2:-}" ]; then
+            echo "[ERROR] --gpu-gate requires a value: strict|warn|off"
+            usage
+            exit 1
+        fi
+        GPU_GATE=$2
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        echo "[ERROR] Unknown argument: $1"
+        usage
+        exit 1
+        ;;
+    esac
+done
+
+case "$GPU_GATE" in
+  strict|warn|off) ;;
+  *)
+    echo "[ERROR] Invalid --gpu-gate value: $GPU_GATE (expected strict|warn|off)"
+    usage
+    exit 1
+    ;;
+esac
+
+# Fallback for non-login shells on remote servers.
+if ! command -v python3 >/dev/null 2>&1 && [ -x "/root/miniconda3/bin/python3" ]; then
+    export PATH="/root/miniconda3/bin:$PATH"
+fi
+
 echo "=========================================="
 echo "Training Readiness Verification"
 echo "=========================================="
@@ -24,15 +76,41 @@ check_pass() {
 
 check_fail() {
     echo -e "${RED}✗${NC} $1"
-    ((ERRORS++))
+    ERRORS=$((ERRORS + 1))
 }
 
 check_warn() {
     echo -e "${YELLOW}⚠${NC} $1"
-    ((WARNINGS++))
+    WARNINGS=$((WARNINGS + 1))
 }
 
-# Check 1: Directory structure
+# Check 1: GPU driver hard gate
+echo "Checking GPU driver..."
+if [ "$GPU_GATE" = "off" ]; then
+    check_warn "GPU gate disabled by --gpu-gate off"
+else
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        if nvidia-smi >/dev/null 2>&1; then
+            GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 || true)
+            GPU_DRIVER=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1 || true)
+            check_pass "nvidia-smi ready (${GPU_NAME:-unknown}, driver ${GPU_DRIVER:-unknown})"
+        else
+            if [ "$GPU_GATE" = "warn" ]; then
+                check_warn "nvidia-smi failed to execute"
+            else
+                check_fail "nvidia-smi failed to execute"
+            fi
+        fi
+    else
+        if [ "$GPU_GATE" = "warn" ]; then
+            check_warn "nvidia-smi not found"
+        else
+            check_fail "nvidia-smi not found"
+        fi
+    fi
+fi
+
+# Check 2: Directory structure
 echo "Checking directory structure..."
 if [ -d "data/training/processed" ] && [ -d "data/training/eval" ]; then
     check_pass "Training directories exist"
@@ -40,7 +118,7 @@ else
     check_fail "Training directories missing"
 fi
 
-# Check 2: Training data files
+# Check 3: Training data files
 echo ""
 echo "Checking training data files..."
 FILES=(
@@ -61,7 +139,7 @@ for file in "${FILES[@]}"; do
     fi
 done
 
-# Check 3: Python dependencies
+# Check 4: Python dependencies
 echo ""
 echo "Checking Python dependencies..."
 DEPS=("torch" "transformers" "datasets" "peft")
@@ -73,7 +151,7 @@ for dep in "${DEPS[@]}"; do
     fi
 done
 
-# Check 4: Optional dependencies
+# Check 5: Optional dependencies
 echo ""
 echo "Checking optional dependencies..."
 if python3 -c "import bitsandbytes" 2>/dev/null; then
@@ -88,7 +166,7 @@ else
     check_warn "tensorboard not found (logging may not work)"
 fi
 
-# Check 5: Training script
+# Check 6: Training script
 echo ""
 echo "Checking training script..."
 if [ -f "code/ai_service/training/run_train.sh" ]; then
@@ -101,7 +179,7 @@ else
     check_fail "Training script not found"
 fi
 
-# Check 6: Data validation
+# Check 7: Data validation
 echo ""
 echo "Validating data format..."
 python3 -c "
@@ -132,19 +210,19 @@ for f in files:
 sys.exit(0 if all_valid else 1)
 " && check_pass "Data format valid" || check_fail "Data format invalid"
 
-# Check 7: GPU availability (optional)
+# Check 8: Runtime accelerator availability
 echo ""
-echo "Checking GPU availability..."
+echo "Checking runtime accelerator availability..."
 if python3 -c "import torch; assert torch.cuda.is_available()" 2>/dev/null; then
     GPU_NAME=$(python3 -c "import torch; print(torch.cuda.get_device_name(0))" 2>/dev/null)
-    check_pass "GPU available: $GPU_NAME"
+    check_pass "PyTorch CUDA available: $GPU_NAME"
 elif python3 -c "import torch; assert torch.backends.mps.is_available()" 2>/dev/null; then
     check_pass "Apple Silicon GPU (MPS) available"
 else
-    check_warn "No GPU detected (training will be slow)"
+    check_warn "No CUDA/MPS runtime accelerator detected"
 fi
 
-# Check 8: Disk space
+# Check 9: Disk space
 echo ""
 echo "Checking disk space..."
 AVAILABLE=$(df -h . | awk 'NR==2 {print $4}')
