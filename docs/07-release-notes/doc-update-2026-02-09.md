@@ -150,8 +150,8 @@
 ## 相关链接
 
 - [在线文档站点](https://jadesnow7.github.io/graduationDesign/)
-- [Qwen3-VL 迁移基线](docs/05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09.md)
-- [文档状态矩阵](docs/README.md#文档状态矩阵)
+- [Qwen3-VL 迁移基线](/05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09)
+- [文档状态矩阵](/README#文档状态矩阵)
 
 ---
 

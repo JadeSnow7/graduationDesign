@@ -10,7 +10,9 @@
 - [NPU 分层部署](/03-how-to-guides/deployment/npu-tiered-deployment)
 - [模型路由策略](/05-explanation/ai/model-routing-policy)
 - [Plan 模式协作](/06-contributing/plan-mode-workflow)
+- [Plan 模式协作](/06-contributing/plan-mode-workflow)
 - [贡献与规范](/06-contributing/项目规范指南)
+- [更新日志](/07-release-notes/)
 
 ## 文档结构
 
