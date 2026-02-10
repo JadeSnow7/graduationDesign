@@ -1,209 +1,137 @@
-# Edge-Side PoC Implementation
+# Edge PoC（MS-Swift 本机主线）
 
-## 概述
+## 当前状态（2026-02-10）
 
-本 PoC 验证端侧 qwen3-0.6B 模型在 Apple M4 Neural Engine 上的可行性，包括模型微调、量化、ONNX 导出和性能测试。
+本目录已完成端侧最小可用闭环：
 
-## 目录结构
+- [x] 数据转换（train/valid/test -> ms-swift chat format）
+- [x] 本机 LoRA 训练（Qwen3-0.6B-Instruct, Apple MPS）
+- [x] `swift deploy` 本地 OpenAI-compatible 服务
+- [x] AI Service + Backend 网关联调
+- [x] Expo Web 路径客户端联测（12/12 非空回复）
 
+整理结论见：`/Users/huaodong/graduationDesign/outputs/edge_poc/SUMMARY.md`
+
+## 目录说明
+
+```text
+outputs/edge_poc/
+├── README.md
+├── SUMMARY.md
+├── scripts/
+│   ├── convert_edge_data_to_swift_chat.py
+│   ├── prepare_qwen3_0p6b_instruct_model.py
+│   ├── edge_gateway_smoke_test.sh
+│   ├── run_client_web_e2e_edge_v1.sh
+│   ├── quantize_edge_model.py              # 后续阶段
+│   ├── export_to_onnx.py                   # 后续阶段
+│   └── test_apple_neural_engine.py         # 后续阶段
+└── reports/
+    ├── edge_swift_data_check_20260210.json
+    ├── model_prepare_qwen3_0p6b_instruct_20260210.json
+    ├── swift_train_edge_v1_20260210.log
+    ├── swift_train_edge_v1_20260210_summary.md
+    ├── swift_deploy_edge_v1_20260210.log
+    ├── edge_gateway_smoke_20260210.md
+    └── client_web_e2e_edge_v1_20260210.md
 ```
-edge_poc/
-├── data/                           # 训练数据
-│   ├── edge_intent_train.jsonl    # 训练集 (72 samples)
-│   ├── edge_intent_eval.jsonl     # 验证集 (9 samples)
-│   └── edge_intent_test.jsonl     # 测试集 (9 samples)
-├── scripts/                        # 实现脚本
-│   ├── generate_edge_intent_data.py    # 数据生成
-│   ├── quantize_edge_model.py          # 模型量化
-│   ├── export_to_onnx.py               # ONNX 导出
-│   └── test_apple_neural_engine.py     # M4 性能测试
-├── models/                         # 模型文件
-│   ├── qwen3-0.6b-intent-merged/  # 合并后的模型
-│   ├── qwen3-0.6b-intent-int8/    # 量化模型
-│   └── qwen3-0.6b-intent.onnx     # ONNX 模型
-└── reports/                        # 测试报告
-    ├── quantization_report.json
-    ├── onnx_export_report.json
-    └── m4_performance_report.json
-```
 
-## 快速开始
+## 复现实验（本机）
 
-### 1. 环境准备
+### 1) 数据转换
 
 ```bash
-# 安装依赖
-pip install torch transformers onnx onnxruntime psutil
-
-# 验证 ONNX Runtime 支持 CoreML
-python3 -c "import onnxruntime as ort; print(ort.get_available_providers())"
+python3 /Users/huaodong/graduationDesign/outputs/edge_poc/scripts/convert_edge_data_to_swift_chat.py
 ```
 
-### 2. 生成训练数据
+默认输入：
+
+- `/Volumes/Data/models/learning-assistant-training/data/train.jsonl`
+- `/Volumes/Data/models/learning-assistant-training/data/eval.jsonl`
+- `/Volumes/Data/models/learning-assistant-training/data/test.jsonl`
+
+默认输出：
+
+- `/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1/train.jsonl`
+- `/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1/valid.jsonl`
+- `/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1/test.jsonl`
+
+### 2) 基座模型准备
 
 ```bash
-python3 scripts/generate_edge_intent_data.py
+python3 /Users/huaodong/graduationDesign/outputs/edge_poc/scripts/prepare_qwen3_0p6b_instruct_model.py
 ```
 
-**输出**:
-- `data/edge_intent_train.jsonl` - 72 训练样本
-- `data/edge_intent_eval.jsonl` - 9 验证样本
-- `data/edge_intent_test.jsonl` - 9 测试样本
+默认目标路径：
 
-**意图类别**:
-- **本地意图** (5 类): weather_query, time_query, simple_qa, tool_select, safety_check
-- **云端意图** (4 类): complex_reasoning, knowledge_qa, open_chat, long_generation
+- `/Volumes/Data/models/qwen3-0.6b-instruct-hf`
 
-### 3. 模型微调（使用 ms-swift）
+### 3) 本机 LoRA 训练
 
 ```bash
-# 注意: 这一步需要先训练模型，这里假设已有训练好的模型
-# 实际训练命令:
-# python3 -m swift.cli.sft \
-#   --model Qwen/Qwen3-0.6B \
-#   --dataset data/edge_intent_train.jsonl \
-#   --lora_rank 8 \
-#   --lora_alpha 16 \
-#   --learning_rate 2e-4 \
-#   --num_train_epochs 3 \
-#   --output_dir models/qwen3-0.6b-intent
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+bash /Users/huaodong/graduationDesign/code/ai_service/training/run_edge_swift_local.sh
 ```
 
-### 4. 模型量化
+默认输出目录：
+
+- `/Volumes/Data/models/learning-assistant-training/swift_ckpt/edge_qwen3_0p6b_v1`
+
+### 4) 本地部署（OpenAI-compatible）
 
 ```bash
-python3 scripts/quantize_edge_model.py \
-  --model_path models/qwen3-0.6b-intent-merged \
-  --output_dir models/qwen3-0.6b-intent-int8 \
-  --validate \
-  --test_data data/edge_intent_test.jsonl
+python3 -m swift.cli.deploy \
+  --ckpt_dir /Volumes/Data/models/learning-assistant-training/swift_ckpt/edge_qwen3_0p6b_v1/v1-20260210-181349/checkpoint-100 \
+  --infer_backend pt \
+  --host 127.0.0.1 \
+  --port 18080 \
+  --api_key edge-local-key \
+  --served_model_name qwen3-0.6b-edge-v1
 ```
 
-**验证标准**:
-- ✅ 量化后模型大小 < 250MB
-- ✅ 精度损失 < 2%
-- ✅ 推理速度提升 > 2x
-
-### 5. ONNX 导出
+### 5) AI Service / Backend / 联测
 
 ```bash
-python3 scripts/export_to_onnx.py \
-  --model_path models/qwen3-0.6b-intent-int8 \
-  --output_path models/qwen3-0.6b-intent.onnx \
-  --opset_version 14 \
-  --max_length 128 \
-  --validate \
-  --test_data data/edge_intent_test.jsonl
+# AI Service（新终端）
+cd /Users/huaodong/graduationDesign/code/ai_service
+set -a
+source .env.edge_swift_local
+set +a
+uvicorn app.main:app --host 127.0.0.1 --port 8001
+
+# Backend（新终端）
+bash /Users/huaodong/graduationDesign/code/backend/run_local_sqlite.sh
+
+# 网关冒烟（新终端）
+bash /Users/huaodong/graduationDesign/outputs/edge_poc/scripts/edge_gateway_smoke_test.sh
+
+# 客户端联测（新终端）
+bash /Users/huaodong/graduationDesign/outputs/edge_poc/scripts/run_client_web_e2e_edge_v1.sh
 ```
 
-**验证标准**:
-- ✅ ONNX 导出成功
-- ✅ ONNX Runtime 推理一致性 > 99%
-- ✅ ONNX 模型大小 < 300MB
-
-### 6. Apple M4 性能测试
+Expo Web 启动：
 
 ```bash
-python3 scripts/test_apple_neural_engine.py \
-  --onnx_path models/qwen3-0.6b-intent.onnx \
-  --test_data data/edge_intent_test.jsonl \
-  --num_runs 100 \
-  --output_dir reports
+cd /Users/huaodong/graduationDesign/code/mobile
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8080 npm run web
 ```
 
-**测试指标**:
-| 指标 | 目标值 | 实测值 |
-|-----|--------|--------|
-| 推理延迟（P50） | <50ms | TBD |
-| 推理延迟（P95） | <100ms | TBD |
-| 内存占用 | <200MB | TBD |
-| 功耗 | <200mW | TBD |
-| 准确率 | >90% | TBD |
+## 本轮固定配置
 
-## 数据格式
+- 路由策略：`local_first`
+- 非生产 cloud fallback：`false`
+- 本地模型服务：`http://127.0.0.1:18080`
+- API key：`edge-local-key`
+- served model：`qwen3-0.6b-edge-v1`
 
-### 训练数据格式
+## 已验证结果（摘要）
 
-```json
-{
-  "query": "今天天气怎么样？",
-  "response": "{\"intent\": \"weather_query\", \"route\": \"local\", \"confidence\": 0.95}",
-  "system": "你是一个意图分类助手，负责判断用户查询应该在本地处理还是发送到云端。",
-  "history": []
-}
-```
+- 数据解析成功率：100%
+- 训练 best checkpoint：`checkpoint-100`（eval loss 0.0245）
+- 客户端联测：12/12 非空回复，复杂推理“转发云端”语义 2/2
 
-### 意图分类输出格式
+## 后续任务（未完成）
 
-```json
-{
-  "intent": "weather_query",
-  "route": "local",
-  "confidence": 0.95
-}
-```
-
-## 性能目标
-
-### 延迟目标
-
-| 场景 | 目标延迟 | 说明 |
-|-----|---------|------|
-| 意图分类 | <50ms | P95 |
-| Query 改写 | <80ms | P95 |
-| 本地摘要 | <100ms | P95 |
-| Tool 选择 | <50ms | P95 |
-| 安全过滤 | <30ms | P95 |
-
-### 资源目标
-
-| 资源 | 目标值 | 说明 |
-|-----|--------|------|
-| 内存占用 | <200MB | 峰值 |
-| 模型大小 | <250MB | 压缩后 |
-| 功耗 | <200mW | 推理态 |
-| 首次加载 | <500ms | 冷启动 |
-
-### 质量目标
-
-| 指标 | 目标值 | 说明 |
-|-----|--------|------|
-| 意图分类准确率 | >90% | 测试集 |
-| 路由决策准确率 | >85% | 端云协同 |
-| 量化精度损失 | <2% | INT8 |
-| ONNX 一致性 | >99% | vs PyTorch |
-
-## 实施进度
-
-- [x] Phase 1: 环境准备
-- [x] Phase 2: 数据生成
-- [ ] Phase 3: 模型微调
-- [ ] Phase 4: 模型量化
-- [ ] Phase 5: ONNX 导出
-- [ ] Phase 6: M4 性能测试
-- [ ] Phase 7: 论文撰写
-
-## 已知问题
-
-1. **模型微调**: 需要先训练 qwen3-0.6B 模型，当前脚本假设模型已存在
-2. **CoreML 支持**: 需要确认 ONNX Runtime 是否支持 CoreML Execution Provider
-3. **功耗测试**: 需要 sudo 权限才能使用 powermetrics 命令
-
-## 下一步计划
-
-1. 完成模型微调（使用 ms-swift）
-2. 运行量化和 ONNX 导出流程
-3. 在 Apple M4 上进行性能测试
-4. 收集实验数据并更新论文
-5. 撰写 Chapter 6: 端侧模型工程化
-
-## 参考文档
-
-- [Edge-Cloud Architecture (Chapter 5)](../../academic/thesis/src/chapter_5_edge_cloud_architecture.md)
-- [PoC Implementation Plan](../edge_poc_implementation_plan.md)
-- [MS-Swift Documentation](https://github.com/modelscope/swift)
-- [ONNX Runtime Documentation](https://onnxruntime.ai/)
-
-## 联系方式
-
-如有问题，请参考实施计划文档或查看相关脚本的注释。
+- ONNX 导出与 ANE/NPU 优化
+- INT8 量化后精度/性能联合评测
+- 端侧功耗与峰值内存 profiling

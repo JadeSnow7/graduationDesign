@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-02-10T18:12:51",
+  "target_dir": "/Volumes/Data/models/qwen3-0.6b-instruct-hf",
+  "source_dir": "/Volumes/Data/models/.cache/Qwen/Qwen3-0___6B",
+  "status": "ok",
+  "attempts": [
+    {
+      "source": "modelscope",
+      "id": "Qwen/Qwen3-0.6B-Instruct",
+      "status": "failed"
+    },
+    {
+      "source": "modelscope",
+      "id": "qwen/Qwen3-0.6B-Instruct",
+      "status": "failed"
+    },
+    {
+      "source": "modelscope",
+      "id": "Qwen/Qwen3-0.6B",
+      "status": "ok"
+    }
+  ],
+  "key_files_found": [
+    "config.json",
+    "tokenizer_config.json",
+    "tokenizer.json"
+  ]
+}

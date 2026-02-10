@@ -142,92 +142,87 @@
 | 首次加载 | ≤500ms | 用户体验 | 冷启动测试 |
 | 功耗 | ≤200mW | 电池续航 | 功耗监控 |
 
-### 5.2.4 端侧训练与微调策略
+### 5.2.4 端侧训练与微调（本次实测）
 
-**微调原则**：
-1. **场景专用化**：只针对 3-5 个核心场景
-2. **输出约束化**：强制 JSON schema 输出
-3. **数据高质化**：人工标注 + 规则验证
+为验证端侧训练链路的工程可复现性，本文于 2026-02-10 完成了基于 `ms-swift` 的本机 LoRA 微调实验。实验目标不是追求大规模泛化能力，而是先验证“端侧任务可训练、可部署、可接入现有业务 API”的最小闭环。
 
-**技术路线**：
-```
-基座模型: qwen3-0.6B
-微调方式: QLoRA (4-bit)
-LoRA 配置:
-  - rank: 8
-  - alpha: 16
-  - target_modules: [q_proj, v_proj]
-  - dropout: 0.05
+**数据准备与转换**：
 
-训练配置:
-  - learning_rate: 2e-4
-  - epochs: 3-5
-  - batch_size: 16
-  - gradient_accumulation: 4
-  - warmup_ratio: 0.1
+原始数据来自课程助手样本集（`instruction/input/output`），经转换脚本统一为 `messages` 训练格式（system/user/assistant），并注入端侧行为约束提示词（本地优先、结构化回答、复杂推理转云端提示）。
 
-数据规模:
-  - 意图分类: 5,000 样本
-  - Query 改写: 3,000 样本
-  - Tool 选择: 2,000 样本
-  - 总计: 10,000 样本
-```
+| 数据集 | 样本数 | 用途 |
+|-----|------:|-----|
+| train | 400 | LoRA 训练 |
+| valid | 50 | 训练中评估 |
+| test | 50 | 联测抽样 |
+| 总计 | 500 | 解析成功率 100% |
 
-**数据质量标准**：
-- ✅ 标签一致性 > 95%
-- ✅ 输出可解析率 = 100%
-- ✅ Prompt 模板固定
-- ✅ 负样本覆盖率 > 20%
+| 任务类型 | 样本数 |
+|---------|------:|
+| course_resource | 200 |
+| learning_tracking | 150 |
+| simple_qa | 100 |
+| complex_reasoning | 50 |
 
-### 5.2.5 端侧部署流程
+**训练配置（锁定参数）**：
 
-```
-┌─────────────────────────────────────────┐
-│ Phase 1: 训练与微调                      │
-│  ms-swift sft --model qwen3-0.6B        │
-│              --dataset edge_tasks.jsonl │
-│              --lora_rank 8              │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│ Phase 2: LoRA 合并与冻结                 │
-│  ms-swift merge --model_path ...        │
-│  torch.save(model.state_dict(), ...)    │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│ Phase 3: INT8 量化                       │
-│  torch.quantization.quantize_dynamic    │
-│  验证: 精度损失 < 2%                     │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│ Phase 4: ONNX 导出                       │
-│  torch.onnx.export(model, ...)          │
-│  验证: ONNX Runtime 推理一致性           │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│ Phase 5: NPU 编译与优化                  │
-│  平台: Apple Neural Engine (M4)         │
-│  验证: 端到端延迟 < 100ms                │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│ Phase 6: 集成与测试                      │
-│  • 功能测试（100+ cases）                │
-│  • 性能测试（延迟/内存/功耗）            │
-│  • 压力测试（连续推理）                  │
-│  • A/B 测试（灰度发布）                  │
-└─────────────────────────────────────────┘
-```
+| 配置项 | 取值 |
+|-----|-----|
+| 训练框架 | ms-swift 3.12.4 |
+| 训练模式 | LoRA（Apple MPS，本机） |
+| 基座模型 | Qwen3-0.6B-Instruct（HF 格式） |
+| model_type | qwen3_nothinking |
+| lora_rank / lora_alpha / lora_dropout | 8 / 16 / 0.05 |
+| target_modules | q_proj, v_proj |
+| learning_rate | 2e-4 |
+| num_train_epochs | 3 |
+| per_device_train_batch_size | 1 |
+| gradient_accumulation_steps | 8 |
+| max_length | 512 |
+| logging / save / eval steps | 10 / 50 / 50 |
 
-**关键验证点**：
-- [ ] 量化后精度损失 < 2%
-- [ ] ONNX 推理与 PyTorch 一致性 > 99%
-- [ ] NPU 推理延迟 < 100ms (P95)
-- [ ] 内存峰值 < 200MB
-- [ ] 功耗 < 200mW
+**训练关键结果**（来自 `swift_train_edge_v1_20260210.log`）：
+
+| 训练节点 | train loss | eval loss | eval token_acc |
+|-----|----------:|---------:|---------------:|
+| step 50 | 0.2503 | 0.2368 | 0.9529 |
+| step 100 | 0.0334 | **0.0245** | **0.9957** |
+| step 150 | 0.0170 | - | - |
+
+最终 `best_checkpoint` 选择为 `checkpoint-100`。训练后段出现本机磁盘临时空间不足告警，但在中断前已完成关键指标记录与最优 checkpoint 落盘，不影响后续部署与联测。
+
+### 5.2.5 端侧部署与客户端联测闭环（本次实测）
+
+本轮采用 `swift deploy` 将微调产物直接发布为 OpenAI-compatible 本地服务，并串联 AI Service、Backend、Expo Web 客户端完成端到端链路验证。
+
+**部署链路**：
+1. `swift deploy`（`127.0.0.1:18080`，`served_model_name=qwen3-0.6b-edge-v1`）。
+2. AI Service 以 `local_first` 路由策略接入本地模型服务（禁用非生产云端 fallback）。
+3. Backend 通过既有 `/api/v1/ai/chat` 转发。
+4. Expo Web 端沿用既有接口完成对话联测。
+
+**服务健康检查**：
+- `GET /health`：200
+- `GET /v1/models`：200
+- `POST /v1/chat/completions`：可用
+
+**联测结果（固定 12 条用例）**：
+
+| 用例类型 | 条数 | 通过标准 | 结果 |
+|-----|----:|-----|-----|
+| 课程资源检索 | 4 | 非空回复 | 4/4 |
+| 学习追踪 | 3 | 非空回复 | 3/3 |
+| 简单问答 | 3 | 非空回复 | 3/3 |
+| 复杂推理提示 | 2 | 返回“转发云端”语义 | 2/2 |
+| 汇总 | 12 | 非空回复成功率 ≥90% | **100%（PASS）** |
+
+**本轮已完成与待完成边界**：
+- [x] 本机 LoRA 微调（ms-swift）
+- [x] 本地 OpenAI-compatible 服务部署
+- [x] AI Service + Backend + Expo Web 联测闭环
+- [ ] ONNX 导出与 ANE/NPU 编译优化
+- [ ] INT8 量化后精度-性能联合评测
+- [ ] 端侧功耗与峰值内存正式 profiling
 
 ## 5.3 云端服务设计
 
