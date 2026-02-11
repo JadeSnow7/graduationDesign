@@ -72,6 +72,24 @@ jobs:
       - name: Test
         run: npm run test -- --run
 
+  mobile_typecheck:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: code/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck (non-blocking)
+        run: npx tsc --noEmit
+
   ai_service:
     runs-on: ubuntu-latest
     defaults:
