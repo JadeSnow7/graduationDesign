@@ -10,3 +10,4 @@
 - [AI 文档总览](./ai/)
 - [功能模块](./feature-modules.md)
 - [需求文档](./requirements.md)
+- [Rust 增强 POC 计划（2026-02-11）](./architecture/rust-enhancement-poc-plan-2026-02-11.md)

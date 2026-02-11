@@ -24,6 +24,7 @@
  - [前端分层架构](../05-explanation/architecture/react-layered-architecture.md)
  - [课程模块门控方案](../05-explanation/architecture/module-gating-plan.md)
  - [API 一致性与组件化改造计划](../05-explanation/architecture/api-alignment-plan.md)
+ - [Rust 增强 POC 计划（2026-02-11）](../05-explanation/architecture/rust-enhancement-poc-plan-2026-02-11.md)
  - [API 模块归属与鉴权矩阵](../05-explanation/rbac-model.md)
  - [Shared Types & SDK 结构草案](../05-explanation/architecture/shared-sdk-structure.md)
  - [功能模块化与课程开放策略](../05-explanation/feature-modules.md)

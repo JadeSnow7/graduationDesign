@@ -11,3 +11,4 @@
 - [功能模块](./feature-modules.md) - 模块化策略
 - [前端交互](./frontend-api-architecture-interaction.md) - 前端 API 交互
 - [跨平台迁移](./cross-platform-migration-plan.md) - 跨平台迁移计划
+- [Rust 增强 POC 计划（2026-02-11）](./architecture/rust-enhancement-poc-plan-2026-02-11.md) - Edge-Cloud 架构增强、接口契约与迁移清单
