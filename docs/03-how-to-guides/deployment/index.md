@@ -12,4 +12,5 @@
 - [备份与恢复](./backup-recovery.md)
 - [故障排查](./troubleshooting.md)
 - [AI 模型部署](./ai-model-deployment-guide.md)
+- [NPU 分层部署策略](./npu-tiered-deployment.md)
 - [企业微信部署](./wechat_work_guide.md)

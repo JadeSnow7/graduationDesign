@@ -6,6 +6,7 @@
 
 - **双端推理路由（本地优先）**：默认 `private + local`；仅可信网关可授权 `public` 与云路由，Header/JSON 冲突直接 `400`，并输出结构化审计日志（`request_id/request_id_source/privacy/route/final_upstream/fallback_reason`）。
 - **上游模型接入**：AI Service 支持 local/cloud 双上游（`LLM_BASE_URL_LOCAL/*`、`LLM_BASE_URL_CLOUD/*`），生产固定 `LLM_ROUTING_POLICY=local_first`。
+- **多模态独立端点**：新增 `/v1/chat/multimodal`（对外 `/api/v1/ai/chat/multimodal`），在 `qwen3` 与 `qwen3_vl` 间按显式媒体输入路由；默认 `AI_MULTIMODAL_ENABLED=false`。
 - **GraphRAG（可追溯引用）**：关键词检索 + 图扩展；并支持混合检索（关键词+语义）与索引热更新。
 - **写作类型感知分析**：面向文献综述/课程论文/学位论文/摘要的 rubric 输出（结构化维度评分 + 建议）。
 - **引导式学习（guided）**：生成学习路径并以苏格拉底式提问引导学生；会话内记录薄弱点与进度。
@@ -18,14 +19,17 @@
 ## 2. 推荐阅读顺序
 
 1. `docs/03-how-to-guides/deployment/ai-model-deployment-guide.md`（训练+部署一条龙）
-2. `docs/05-explanation/ai/post-training-finetuning-plan.md`（训练路线与实验设计）
-3. `docs/05-explanation/ai/training-data-spec.md`（数据格式与采集/标注建议）
-4. `docs/05-explanation/ai/graph-rag.md`（RAG 与引用溯源）
-5. `docs/05-explanation/ai/guided-learning.md`（引导式学习与薄弱点记录）
-6. `docs/05-explanation/ai/distillation.md`（数据蒸馏与 smoke 链路验证）
-7. `docs/05-explanation/ai/tool-calling.md`（工具调用机制与扩展点）
-8. `docs/05-explanation/ai/learning-analytics.md`（学习状态分析与画像）
-9. `docs/05-explanation/ai/papers.md`（参考论文列表：资料整理与调研入口）
+2. `docs/03-how-to-guides/deployment/npu-tiered-deployment.md`（NPU 分层部署策略）
+3. `docs/05-explanation/ai/model-routing-policy.md`（模型路由策略权威说明）
+4. `docs/05-explanation/ai/post-training-finetuning-plan.md`（训练路线与实验设计）
+5. `docs/05-explanation/ai/training-data-spec.md`（数据格式与采集/标注建议）
+6. `docs/05-explanation/ai/graph-rag.md`（RAG 与引用溯源）
+7. `docs/05-explanation/ai/guided-learning.md`（引导式学习与薄弱点记录）
+8. `docs/05-explanation/ai/distillation.md`（数据蒸馏与 smoke 链路验证）
+9. `docs/05-explanation/ai/tool-calling.md`（工具调用机制与扩展点）
+10. `docs/05-explanation/ai/learning-analytics.md`（学习状态分析与画像）
+11. `docs/05-explanation/ai/papers.md`（参考论文列表：资料整理与调研入口）
+12. `docs/05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09.md`（本次多模态迁移基线与回滚锚点）
 
 ## 3. 路由与合规基线
 
@@ -33,6 +37,7 @@
 - 信任边界：只有携带 `X-AI-Gateway-Token` 且通过 `AI_GATEWAY_SHARED_TOKEN` 校验的请求，才允许 `public`/`cloud`/`auto`。
 - 冲突策略：`X-Privacy-Level` 与 JSON `privacy`、`X-LLM-Route` 与 JSON `route` 冲突时返回 `400`（`CONFLICTING_ROUTING_PARAMS`）。
 - 非生产兜底：`APP_ENV!=prod` 时默认 `LLM_ENABLE_CLOUD_FALLBACK_NONPROD=false`，即使 `public` 也不自动兜底云端。
+- 模型族配置：文本与视觉模型可分别通过 `LLM_*_TEXT_*`、`LLM_*_VL_*` 配置；默认仍兼容旧变量 `LLM_BASE_URL_*` / `LLM_MODEL_*`。
 
 ## 4. 内部 API 约束说明
 

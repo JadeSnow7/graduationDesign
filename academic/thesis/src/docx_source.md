@@ -36,8 +36,7 @@
 权限控制以及学习事件记录；AI 服务通过 OpenAI-compatible
 接口调用大语言模型，提供对话辅导、引导式学习、写作分析、工具调用与
 GraphRAG
-检索增强能力。为降低幻觉并提升可追溯性，平台针对《学术规范与论文写作》课程，将课程规范、优秀范文片段与常见错误库构建为可检索向量知识库，在生成反馈时注入证据片段并要求引用编号，支持事后审核与复核。为支撑后续模型定制，本文实现了面向写作场景的数据规范、LoRA/QLoRA
-训练与评测脚本，并在样例数据上完成端到端验证。客户端侧采用跨端方案，通过共享
+检索增强能力。为降低幻觉并提升可追溯性，平台针对《学术规范与论文写作》课程，将课程规范、优秀范文片段与常见错误库构建为可检索向量知识库，在生成反馈时注入证据片段并要求引用编号，支持事后审核与复核。为支撑模型定制，本文实现了覆盖云侧与端侧的后训练工具链：在写作场景建立 LoRA/QLoRA 训练评测流程，并在 2026-02-10 完成基于 ms-swift 的端侧 qwen3-0.6B 本机 LoRA 微调与客户端联测闭环。客户端侧采用跨端方案，通过共享
 types 与统一 SDK 保持 Web 与移动端的 API 契约一致，并在 UI
 层针对不同终端做适配。实践表明，该系统能够以较低的工程成本实现可控、可追溯的写作辅导流程，并为规模化数据驱动的模型迭代提供基础。
 
@@ -61,9 +60,11 @@ writing analysis, tool calling, and GraphRAG-based retrieval
 augmentation. To reduce hallucinations and improve traceability, we
 build a writing knowledge base from course guidelines, exemplars, and
 common error patterns, retrieve evidence snippets, and require citation
-markers in generated feedback. For model customization, we provide a
-data specification and a LoRA/QLoRA fine-tuning pipeline with evaluation
-scripts, validated end-to-end on a sample dataset. On the client side,
+markers in generated feedback. For model customization, we provide an
+end-to-end post-training toolchain across cloud and edge settings,
+including LoRA/QLoRA pipelines and a local ms-swift LoRA run for
+Qwen3-0.6B on 2026-02-10 with client integration verification. On the
+client side,
 we support both Web and Mobile via shared types and a unified SDK to
 keep API contracts consistent while adapting UI for each platform. The
 implementation demonstrates a practical and controllable workflow for
@@ -243,40 +244,50 @@ Embedding 向量化（‘api\|local\|hash\|env‘，默认模型
 
 ## 模型后训练与评测管线
 
-为使模型更贴近课程风格与任务需求，本文实现了面向写作/对话数据的后训练管线：包括数据规范、数据准备脚本、LoRA/QLoRA
-微调脚本与离线评测脚本。训练数据以多轮对话 JSONL 表示，并区分
-tool/rag/style
-等样本类型；评测阶段以固定回归集输出指标与案例，辅助迭代数据与提示策略。受数据规模与时间限制，本文先使用小规模样例数据完成端到端验证：训练脚本可稳定产出
-adapter，评测脚本可输出困惑度、格式一致性与拒答准确率等指标，为后续在
-Qwen3 8B 上进行 100k 规模训练提供工程基础。
+为使模型更贴近“端侧低延迟 + 场景化决策”目标，本文在原有训练工具链基础上，于 2026-02-10 新增并完成了端侧课程助手的本机微调实验。该实验采用 `ms-swift` 作为统一训练与部署框架，围绕本科课程《电磁场与电磁波》的高频任务（课程资源检索、学习追踪、简单问答、复杂推理分流提示）构建数据与联测闭环。
 
-为降低“数据格式不一致导致训练失败”的工程风险，本文在训练前增加了数据蒸馏与冒烟验证步骤：将
-chat-style 的训练/评测 JSONL 通过 `scripts/ai/distill_data.py` 蒸馏为
-prompt/response 格式，并用 `scripts/ai/train_smoke.py`
-在分钟级输出困惑度等轻量指标，用于验证数据链路与指标输出链路可复现。需要强调的是，smoke
-指标仅用于证明训练与评测链路可用，并不代表最终模型效果。
+数据处理阶段将原始 `instruction/input/output` 样本转换为 `messages` 格式，统一注入端侧系统提示词（本地优先、结构化回答、复杂问题转云端文案），形成可直接用于 SFT 的 chat-style JSONL。转换后数据规模如下：
 
-| 指标 | 训练集 | 验证集 | 说明 |
-|:---|:--:|:--:|:---|
-| 样本数 | 3 | 2 | 小规模 JSONL 样例数据，仅用于链路验证 |
-| Token 数 | 68 | 50 | 以分词后 token 计 |
-| 困惑度（PPL） | 32.95 | 41.30 | 使用轻量模型完成端到端训练与评测，数值不代表最终效果 |
+| 数据集 | 样本数 | 说明 |
+|:---|---:|:---|
+| train | 400 | 端侧 LoRA 训练 |
+| valid | 50 | 训练中评估（eval\_steps=50） |
+| test | 50 | 独立测试与联测抽样 |
+| 总计 | 500 | 解析成功率 100% |
 
-样例训练链路验证结果（用于证明训练与评测链路可用）
+| 任务类型分布 | 样本数 |
+|:---|---:|
+| course\_resource | 200 |
+| learning\_tracking | 150 |
+| simple\_qa | 100 |
+| complex\_reasoning | 50 |
 
-### 阶段性训练结果同步（2026-02-08）
+本次实验采用本机 Apple MPS 环境进行 LoRA 微调（不使用 QLoRA），核心配置如下：
 
-在完成训练脚本与评测脚本的端到端连通验证后，项目于 2026-02-08 执行了首次
-`all`
-多任务训练评测（小样本）与随机三组回归测试，并将结果同步为统一事实源。
+| 配置项 | 取值 |
+|:---|:---|
+| 训练框架 | ms-swift 3.12.4 |
+| 基座模型 | Qwen3-0.6B（HF 格式，本地路径） |
+| train\_type | lora |
+| LoRA 参数 | rank=8, alpha=16, dropout=0.05 |
+| target\_modules | q\_proj, v\_proj |
+| learning\_rate | 2e-4 |
+| num\_train\_epochs | 3 |
+| batch/accum | batch=1, grad\_accum=8 |
+| max\_length | 512 |
+| logging/save/eval | 10 / 50 / 50 steps |
 
-| 评测批次 | 样本规模 | key_point_coverage | refusal_accuracy | response_format | tool_call_accuracy |
-|:---|:--:|---:|---:|---:|---:|
-| 首次 all 训练 | n=5 | 0.9167 | 0.8000 | 1.0000 | 0.0000 |
-| 随机三组回归均值 | 3 × n=6 | 0.7333 | 0.7778 | 0.8333 | 0.0000 |
+训练日志显示 loss 持续下降，并在第 100 step 达到最优验证指标。关键过程数据如下：
 
-需要说明的是，上述结果仅用于证明“训练-评测-文档同步”链路可复现，属于阶段性验证数据，不作为正式实验结论。正式实验将在真实
-`style/tool/rag` 数据闭环后重新训练并报告主结果。
+| 训练节点 | train loss | eval loss | eval token\_acc |
+|:---|---:|---:|---:|
+| step 50 | 0.2503 | 0.2368 | 0.9529 |
+| step 100 | 0.0334 | **0.0245** | **0.9957** |
+| step 150 | 0.0170 | - | - |
+
+综合 `trainer_state` 与日志，最终选用 `checkpoint-100` 作为部署产物（best\_model\_checkpoint）。训练末段虽出现本机系统盘空间告警，但不影响已落盘的最佳 checkpoint 与后续部署验证。
+
+在部署与联调阶段，本文将 `checkpoint-100` 通过 `swift deploy` 发布为 OpenAI-compatible 服务，并串联 AI Service、Backend 与 Expo Web 客户端路径，完成“训练-部署-网关-客户端”端到端验证。固定 12 条联测用例（4 条课程资源、3 条学习追踪、3 条简单问答、2 条复杂推理）结果为：非空回复成功率 100%，复杂推理场景“转发云端”语义命中率 100%。该结果表明端侧微调模型已能稳定覆盖本轮定义的本地任务边界，并具备与现有业务接口的工程兼容性。
 
 ## 系统原型实现与企业微信集成
 
@@ -305,8 +316,7 @@ RAG
 types 与统一 SDK 保证 Web/Mobile
 的调用契约一致，为跨端交付与扩展提供基础。
 
-截至 2026-02-08，系统已完成首次 all
-训练与随机三组回归的阶段性验证，验证了训练与评测链路可复现；正式实验结论仍需基于真实数据闭环后的完整训练与评测结果。
+截至 2026-02-10，系统已完成端侧课程助手的本机 LoRA 微调、OpenAI-compatible 本地部署、网关链路联调与 Expo Web 客户端联测，验证了端侧训练/微调链路与业务接入链路的可复现性；后续工作将继续扩展真实课堂数据规模与长期学习效果评估。
 
 后续工作可从以下方面继续推进：一是完善知识抽取与融合策略，引入实体关系抽取与图数据库，提高知识图谱的细粒度与可维护性；二是构建更系统的课程问答评测集，量化准确率、引用一致性与教学效果；三是优化检索与上下文压缩策略，降低响应时延；四是完善企业微信
 OAuth 与消息推送能力，提升真实教学场景下的使用体验。

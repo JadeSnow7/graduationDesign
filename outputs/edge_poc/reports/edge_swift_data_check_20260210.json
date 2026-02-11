@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-02-10T18:03:38",
+  "input_dir": "/Volumes/Data/models/learning-assistant-training/data",
+  "output_dir": "/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1",
+  "system_prompt": "你是端侧学习助手，优先本地处理请求。回答要简洁、结构化、可执行。\n对于课程资源检索、学习追踪、简单问答，直接给出本地可执行建议。\n当问题属于复杂推理、证明、深入理论分析时，不要编造长推导，请明确说明该问题将转发云端 AI 处理。",
+  "summary": {
+    "total_input_count": 500,
+    "total_output_count": 500,
+    "total_malformed_count": 0,
+    "total_missing_field_count": 0,
+    "parse_success_rate": 1.0,
+    "task_type_distribution": {
+      "learning_tracking": 150,
+      "simple_qa": 100,
+      "course_resource": 200,
+      "complex_reasoning": 50
+    },
+    "route_distribution": {
+      "local": 450,
+      "cloud": 50
+    }
+  },
+  "splits": {
+    "train": {
+      "input_file": "/Volumes/Data/models/learning-assistant-training/data/train.jsonl",
+      "output_file": "/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1/train.jsonl",
+      "input_count": 400,
+      "output_count": 400,
+      "malformed_count": 0,
+      "missing_field_count": 0,
+      "task_type_distribution": {
+        "learning_tracking": 123,
+        "simple_qa": 69,
+        "course_resource": 165,
+        "complex_reasoning": 43
+      },
+      "route_distribution": {
+        "local": 357,
+        "cloud": 43
+      }
+    },
+    "valid": {
+      "input_file": "/Volumes/Data/models/learning-assistant-training/data/eval.jsonl",
+      "output_file": "/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1/valid.jsonl",
+      "input_count": 50,
+      "output_count": 50,
+      "malformed_count": 0,
+      "missing_field_count": 0,
+      "task_type_distribution": {
+        "course_resource": 17,
+        "simple_qa": 16,
+        "learning_tracking": 12,
+        "complex_reasoning": 5
+      },
+      "route_distribution": {
+        "local": 45,
+        "cloud": 5
+      }
+    },
+    "test": {
+      "input_file": "/Volumes/Data/models/learning-assistant-training/data/test.jsonl",
+      "output_file": "/Users/huaodong/graduationDesign/data/training/processed/edge_swift_v1/test.jsonl",
+      "input_count": 50,
+      "output_count": 50,
+      "malformed_count": 0,
+      "missing_field_count": 0,
+      "task_type_distribution": {
+        "learning_tracking": 15,
+        "course_resource": 18,
+        "simple_qa": 15,
+        "complex_reasoning": 2
+      },
+      "route_distribution": {
+        "local": 48,
+        "cloud": 2
+      }
+    }
+  }
+}

@@ -7,6 +7,23 @@ on:
     branches: [main]
 
 jobs:
+  rust_core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/rust-core
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Test
+        run: cargo test --workspace --all-targets
+
   backend:
     runs-on: ubuntu-latest
     defaults:

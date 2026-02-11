@@ -53,3 +53,11 @@
 - 新增功能：至少更新一处 How-to 或 Explanation 文档。
 - 接口变更：必须更新 `04-reference/api` 下对应页面。
 - 运行/部署相关变更：必须更新 `03-how-to-guides` 对应页面。
+- **功能改动需附计划文档或链接**：对于跨模块改动或架构变更，需使用 [Plan 模式](./plan-mode-workflow.md) 输出实施计划。
+
+## 8. 相关文档
+
+- [Plan 模式协作流程](./plan-mode-workflow.md)
+- [Plan 模式计划模板](./plan-mode-template.md)
+- [文档规范](./doc-style.md)
+- [测试指南](./testing-guide.md)

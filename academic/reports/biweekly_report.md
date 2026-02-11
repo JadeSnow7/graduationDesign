@@ -30,18 +30,43 @@
 | 1.7 | 搭建 Git 仓库与分支策略 | 1h | ✅ 已完成 | - | 仓库已创建 |
 | 1.8 | 搭建 Docker Compose 开发环境 | 2h | ✅ 已完成 | - | deploy 目录 |
 
-### 本周工作总结 (2026-01-12)
+### 本周工作总结 (2026-02-10)
 
-本周完成了**学习状态分析模块**的实现，包括：
-- NLP 薄弱点检测器（`weak_point_detector.py`）：50+ 电磁场概念词库
-- 学生档案持久化（`student_profile.py` + Go 模型）
-- 个性化辅导策略技能（`coaching_strategy.py`）
-- 集成到 `/v1/chat/guided` 端点
+本周完成了**端云协同架构设计与 PoC 实施**，包括：
+
+#### 1. 架构设计文档
+- 完成 Chapter 5: 端云协同架构设计（`chapter_5_edge_cloud_architecture.md`）
+- 系统架构图：端侧 NPU (qwen3-0.6B) + 云端服务 (qwen3-8B + 检索)
+- 路由决策机制：基于置信度与任务复杂度的动态路由
+- 工程决策分析：模型选型、检索系统、ms-swift 选择
+
+#### 2. Edge PoC 实施
+- 生成端侧意图分类训练数据（90 samples，9 类意图）
+  - 本地意图：weather_query, time_query, simple_qa, tool_select, safety_check
+  - 云端意图：complex_reasoning, knowledge_qa, open_chat, long_generation
+- 实现量化脚本（`quantize_edge_model.py`）：INT8 量化，目标 <250MB
+- 实现 ONNX 导出脚本（`export_to_onnx.py`）：支持 Apple Neural Engine
+- 实现 M4 性能测试脚本（`test_apple_neural_engine.py`）：延迟/内存/功耗测试
+
+#### 3. 文档与计划
+- 创建 PoC 实施计划（`edge_poc_implementation_plan.md`）
+- 创建 Edge PoC README（完整的实施指南）
+- 更新任务跟踪系统（6 个任务）
+
+#### 4. 性能目标
+| 指标 | 目标值 | 说明 |
+|-----|--------|------|
+| 推理延迟（P95） | <100ms | 端侧 NPU |
+| 内存占用 | <200MB | 峰值 |
+| 量化精度损失 | <2% | INT8 |
+| ONNX 一致性 | >99% | vs PyTorch |
 
 ### 下周工作计划
-1. 实现 Go 后端 `/api/v1/learning-profiles` CRUD API
-2. 引用标注集成到 AI 回复
-3. 开始收集教学问答数据集
+1. 完成端侧模型微调（使用 ms-swift + qwen3-0.6B）
+2. 运行量化和 ONNX 导出流程
+3. 在 Apple M4 上进行性能测试
+4. 收集实验数据并更新论文 Chapter 6
+5. 开始 MS-Swift vs Custom 训练对比实验
 
 ---
 

@@ -45,43 +45,111 @@
 除写作建议外，教学场景中仍存在需要“可验证计算/查询”的任务，例如对字数、结构要素或格式规则进行检查，或在理工类课程中进行数值计算与仿真。为此，AI 服务提供工具调用接口，使模型在需要精确结果时可调用外部工具并将结果回注到对话中，再生成解释性回答。工具调用能力本质上为系统提供了“外部可验证执行器”，用于约束模型的自由生成范围，降低“凭空计算/编造规则”的风险。本文在原型中实现了基础工具集合，并预留面向写作场景的扩展空间（如引用格式校验、结构要素检查等）。
 
 \section{模型后训练与评测管线}
-为使模型更贴近课程风格与任务需求，本文实现了面向写作/对话数据的后训练管线：包括数据规范、数据准备脚本、LoRA/QLoRA 微调脚本\cite{hu2021lora,dettmers2023qlora}与离线评测脚本。训练数据以多轮对话 JSONL 表示，并区分 tool/rag/style 等样本类型；评测阶段以固定回归集输出指标与案例，辅助迭代数据与提示策略。受数据规模与时间限制，本文先使用小规模样例数据完成端到端验证：训练脚本可稳定产出 adapter，评测脚本可输出困惑度、格式一致性与拒答准确率等指标，为后续在 Qwen3 8B 上进行 100k 规模训练提供工程基础。
+为使模型更贴近“端侧低延迟 + 场景化决策”目标，本文在原有训练工具链基础上，于 2026-02-10 完成了端侧课程助手的本机微调实验。该实验采用 \texttt{ms-swift} 作为统一训练与部署框架，围绕课程资源检索、学习追踪、简单问答与复杂推理分流提示四类任务，构建“数据转换--训练--部署--联测”闭环。
 
-为降低“数据格式不一致导致训练失败”的工程风险，本文在训练前增加了数据蒸馏与冒烟验证步骤：将 chat-style 的训练/评测 JSONL 通过 \texttt{scripts/ai/distill\_data.py} 蒸馏为 prompt/response 格式，并用 \texttt{scripts/ai/train\_smoke.py} 在分钟级输出困惑度等轻量指标，用于验证数据链路与指标输出链路可复现。需要强调的是，smoke 指标仅用于证明训练与评测链路可用，并不代表最终模型效果。
+\subsection{数据转换与质量校验}
+原始样本采用 \texttt{instruction/input/output} 结构。为适配 \texttt{ms-swift} 的对话式监督微调，本文将数据统一转换为 \texttt{messages} 格式（system/user/assistant），并在 system 提示中固化端侧行为约束：本地优先、结构化回答、复杂推理返回转云端提示文案。转换后的数据统计如表~\ref{tab:edge-split-stats} 与表~\ref{tab:edge-task-stats} 所示。
 
 \begin{table}[htbp]
   \centering
-  \caption{样例训练链路验证结果（用于证明训练与评测链路可用）}
-  \label{tab:smoke-train}
-  \begin{tabular}{lccp{6.2cm}}
+  \caption{端侧微调数据集划分（2026-02-10）}
+  \label{tab:edge-split-stats}
+  \begin{tabular}{lrl}
     \toprule
-    指标 & 训练集 & 验证集 & 说明 \\
+    数据集 & 样本数 & 用途 \\
     \midrule
-    样本数 & 3 & 2 & 小规模 JSONL 样例数据，仅用于链路验证 \\
-    Token 数 & 68 & 50 & 以分词后 token 计 \\
-    困惑度（PPL） & 32.95 & 41.30 & 使用轻量模型完成端到端训练与评测，数值不代表最终效果 \\
+    train & 400 & LoRA 训练 \\
+    valid & 50 & 训练中评估 \\
+    test & 50 & 联测抽样 \\
+    总计 & 500 & 解析成功率 100\% \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{阶段性训练结果同步（2026-02-08）}
-在完成训练脚本与评测脚本的端到端连通验证后，项目于 2026-02-08 执行了首次 \texttt{all} 多任务训练评测（小样本）与随机三组回归测试，并将结果同步为统一事实源。指标如表~\ref{tab:stage-train-20260208} 所示。
-
 \begin{table}[htbp]
   \centering
-  \caption{阶段性训练结果（2026-02-08，同步批次）}
-  \label{tab:stage-train-20260208}
-  \begin{tabular}{lp{2.0cm}cccc}
+  \caption{端侧微调任务类型分布}
+  \label{tab:edge-task-stats}
+  \begin{tabular}{lr}
     \toprule
-    评测批次 & 样本规模 & key\_point\_coverage & refusal\_accuracy & response\_format & tool\_call\_accuracy \\
+    任务类型 & 样本数 \\
     \midrule
-    首次 all 训练 & $n=5$ & 0.9167 & 0.8000 & 1.0000 & 0.0000 \\
-    随机三组回归均值 & $3 \times n=6$ & 0.7333 & 0.7778 & 0.8333 & 0.0000 \\
+    course\_resource & 200 \\
+    learning\_tracking & 150 \\
+    simple\_qa & 100 \\
+    complex\_reasoning & 50 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-需要说明的是，上述结果仅用于证明“训练—评测—文档同步”链路可复现，属于阶段性验证数据，不作为本文正式实验结论。后续正式实验将在真实 \texttt{style/tool/rag} 数据闭环后重新训练并报告主结果。
+\subsection{本机 LoRA 微调配置}
+本轮实验固定采用 LoRA（Apple MPS）而非 QLoRA，以规避本机环境下 bitsandbytes 的 GPU 能力限制。核心训练参数如表~\ref{tab:edge-train-config} 所示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{端侧本机 LoRA 训练配置（ms-swift）}
+  \label{tab:edge-train-config}
+  \begin{tabular}{lp{8.5cm}}
+    \toprule
+    配置项 & 取值 \\
+    \midrule
+    训练框架 & ms-swift 3.12.4 \\
+    训练模式 & LoRA（Apple MPS，本机） \\
+    基座模型 & Qwen3-0.6B-Instruct（HF 本地路径） \\
+    model\_type & qwen3\_nothinking \\
+    LoRA 参数 & rank=8, alpha=16, dropout=0.05 \\
+    target\_modules & q\_proj, v\_proj \\
+    learning\_rate & $2 \times 10^{-4}$ \\
+    num\_train\_epochs & 3 \\
+    per\_device\_train\_batch\_size & 1 \\
+    gradient\_accumulation\_steps & 8 \\
+    max\_length & 512 \\
+    logging/save/eval steps & 10 / 50 / 50 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{训练结果与最佳检查点选择}
+训练日志显示 loss 持续下降，并在第 100 step 达到最优验证指标。关键过程数据如表~\ref{tab:edge-train-metrics} 所示。
+
+\begin{table}[htbp]
+  \centering
+  \caption{端侧 LoRA 训练关键指标（2026-02-10）}
+  \label{tab:edge-train-metrics}
+  \begin{tabular}{lccc}
+    \toprule
+    训练节点 & train loss & eval loss & eval token\_acc \\
+    \midrule
+    step 50 & 0.2503 & 0.2368 & 0.9529 \\
+    step 100 & 0.0334 & \textbf{0.0245} & \textbf{0.9957} \\
+    step 150 & 0.0170 & - & - \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+综合 \texttt{trainer\_state} 与日志记录，最终选择 \texttt{checkpoint-100} 作为部署产物（best\_model\_checkpoint）。训练尾段虽出现本机磁盘临时空间不足告警，但不影响最优 checkpoint 的落盘与后续部署验证。
+
+\subsection{部署与客户端联测}
+本文将 \texttt{checkpoint-100} 通过 \texttt{swift deploy} 发布为 OpenAI-compatible 本地服务（\texttt{127.0.0.1:18080}），并按“AI Service $\rightarrow$ Backend $\rightarrow$ Expo Web”链路完成联测。系统路由策略固定为 \texttt{local\_first}，非生产环境云端 fallback 关闭。服务健康检查 \texttt{GET /health}、\texttt{GET /v1/models} 与 \texttt{POST /v1/chat/completions} 均返回成功。
+
+\begin{table}[htbp]
+  \centering
+  \caption{端侧模型客户端联测结果（12 条固定用例）}
+  \label{tab:edge-e2e-results}
+  \begin{tabular}{lccc}
+    \toprule
+    用例类型 & 条数 & 通过标准 & 结果 \\
+    \midrule
+    课程资源检索 & 4 & 非空回复 & 4/4 \\
+    学习追踪 & 3 & 非空回复 & 3/3 \\
+    简单问答 & 3 & 非空回复 & 3/3 \\
+    复杂推理提示 & 2 & 返回“转发云端”语义 & 2/2 \\
+    汇总 & 12 & 非空回复成功率 $\geq 90\%$ & \textbf{100\%（PASS）} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+上述结果表明，本轮端侧训练/微调链路已实现工程可复现，且在不改动后端公共 API（\texttt{/api/v1/ai/chat}）前提下完成了业务接入验证。ONNX 导出、ANE/NPU 编译优化、INT8 量化后联合评测与端侧功耗 profiling 将在后续阶段进行。
 
 \section{系统原型实现与企业微信集成}
 平台前端采用 React + TypeScript 实现 Web 客户端，并提供基于 Expo 的移动端实现；后端采用 Go/Gin 提供课程、写作与学习事件相关 API，并通过 JWT 与 RBAC 实现权限治理；AI 服务基于 FastAPI，实现对话、写作分析、GraphRAG 与工具调用等能力，并对接 OpenAI-compatible 上游推理服务。原型部署层面提供 Docker Compose 配置以便快速启动与验证；对于企业微信等场景，系统预留 OAuth 与组织对接能力，以支持后续在真实教学流程中落地。

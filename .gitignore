@@ -291,3 +291,6 @@ temp/
 # Project specific
 data/
 backup/
+/outputs/adapter_backups/
+/outputs/training_sync/bundles/
+/outputs/training_sync/run_*/

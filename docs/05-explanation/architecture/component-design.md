@@ -191,39 +191,47 @@ interface SimulationState {
 - HTTP 路由定义
 - 请求分发
 - 中间件注册
+- 模块化路由管理
+
+**目录结构 (`internal/http/routes/`)**:
+```text
+internal/http/routes/
+├── admin_routes.go
+├── ai_routes.go
+├── auth_routes.go
+├── course_routes.go
+...
+└── middleware.go
+```
 
 ```go
-// 路由配置
-type Router struct {
-    engine *gin.Engine
-    authMiddleware gin.HandlerFunc
-    corsMiddleware gin.HandlerFunc
+// 主路由入口 (internal/http/router.go)
+func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
+    r := gin.New()
+    
+    // 初始化各个 Handler...
+    authHandler := http.NewAuthHandler(...)
+    courseHandler := http.NewCourseHandler(...)
+
+    api := r.Group("/api/v1")
+    
+    // 注册各模块路由
+    routes.RegisterAuthRoutes(api, cfg.JWTSecret, authHandler)
+    routes.RegisterCourseRoutes(api, cfg.JWTSecret, courseHandler)
+    // ...
+    
+    return r
 }
 
-func (r *Router) SetupRoutes() {
-    api := r.engine.Group("/api/v1")
-    
-    // 认证路由
-    auth := api.Group("/auth")
-    auth.POST("/login", r.authHandler.Login)
-    auth.POST("/wecom", r.authHandler.WecomLogin)
-    
-    // 需要认证的路由
-    protected := api.Group("/")
-    protected.Use(r.authMiddleware)
-    
-    // 课程路由
-    courses := protected.Group("/courses")
-    courses.GET("", r.courseHandler.GetCourses)
-    courses.POST("", r.courseHandler.CreateCourse)
-    
-    // AI 路由
-    ai := protected.Group("/ai")
-    ai.POST("/chat", r.aiHandler.Chat)
-    
-    // 仿真路由
-    sim := protected.Group("/sim")
-    sim.POST("/laplace2d", r.simHandler.Laplace2D)
+// 模块路由示例 (internal/http/routes/course_routes.go)
+func RegisterCourseRoutes(rg *gin.RouterGroup, jwtSecret string, h *http.CourseHandler) {
+    courses := rg.Group("/courses")
+    courses.Use(middleware.AuthMiddleware(jwtSecret))
+    {
+        courses.GET("", h.ListCourses)
+        courses.POST("", h.CreateCourse)
+        courses.GET("/:id", h.GetCourse)
+    }
 }
 ```
 
@@ -345,28 +353,39 @@ func (h *CourseHandler) CreateCourse(c *gin.Context) {
 - 外部服务调用
 - 事务管理
 
+**接口定义**:
 ```go
-// 课程服务
-type CourseService struct {
-    courseRepo repository.CourseRepository
-    userRepo   repository.UserRepository
-    aiClient   *client.AIClient
+// 课程服务接口
+type CourseService interface {
+    CreateCourse(ctx context.Context, userID uint, req *CreateCourseRequest) (*models.Course, error)
+    GetUserCourses(ctx context.Context, userID uint) ([]*models.Course, error)
+    // ...
+}
+```
+
+**实现示例**:
+```go
+// 课程服务实现
+type courseService struct {
+    courseRepo repositories.CourseRepository
+    userRepo   repositories.UserRepository
+    aiClient   clients.AIClientInterface
     db         *gorm.DB
 }
 
-func (s *CourseService) CreateCourse(userID string, req *CreateCourseRequest) (*Course, error) {
+func (s *courseService) CreateCourse(ctx context.Context, userID uint, req *CreateCourseRequest) (*models.Course, error) {
     // 验证用户权限
-    user, err := s.userRepo.GetByID(userID)
+    user, err := s.userRepo.FindByID(ctx, userID)
     if err != nil {
         return nil, err
     }
     
-    if !user.HasPermission("course:write") {
+    if user.Role != "teacher" && user.Role != "admin" {
         return nil, errors.New("insufficient permissions")
     }
     
     // 检查课程代码唯一性
-    exists, err := s.courseRepo.ExistsByCode(req.Code)
+    exists, err := s.courseRepo.ExistsByCode(ctx, req.Code)
     if err != nil {
         return nil, err
     }
@@ -375,33 +394,16 @@ func (s *CourseService) CreateCourse(userID string, req *CreateCourseRequest) (*
     }
     
     // 创建课程
-    course := &Course{
+    course := &models.Course{
         Name:        req.Name,
         Code:        req.Code,
         Semester:    req.Semester,
         Description: req.Description,
         TeacherID:   userID,
         Status:      "active",
-        InviteCode:  generateInviteCode(),
     }
     
-    return s.courseRepo.Create(course)
-}
-
-func (s *CourseService) GetUserCourses(userID string) ([]*Course, error) {
-    user, err := s.userRepo.GetByID(userID)
-    if err != nil {
-        return nil, err
-    }
-    
-    switch user.Role {
-    case "teacher":
-        return s.courseRepo.GetByTeacherID(userID)
-    case "student":
-        return s.courseRepo.GetByStudentID(userID)
-    default:
-        return s.courseRepo.GetAll()
-    }
+    return s.courseRepo.Create(ctx, course)
 }
 ```
 
@@ -411,36 +413,43 @@ func (s *CourseService) GetUserCourses(userID string) ([]*Course, error) {
 - 数据库操作
 - 查询优化
 - 数据映射
-- 缓存管理
 
+**接口定义**:
 ```go
 // 课程仓储接口
 type CourseRepository interface {
-    Create(course *Course) (*Course, error)
-    GetByID(id string) (*Course, error)
-    GetByCode(code string) (*Course, error)
-    GetByTeacherID(teacherID string) ([]*Course, error)
-    GetByStudentID(studentID string) ([]*Course, error)
-    Update(course *Course) error
-    Delete(id string) error
-    ExistsByCode(code string) (bool, error)
+    Create(ctx context.Context, course *models.Course) (*models.Course, error)
+    FindByID(ctx context.Context, id uint) (*models.Course, error)
+    FindByCode(ctx context.Context, code string) (*models.Course, error)
+    FindByTeacherID(ctx context.Context, teacherID uint) ([]*models.Course, error)
+    FindByStudentID(ctx context.Context, studentID uint) ([]*models.Course, error)
+    Update(ctx context.Context, course *models.Course) error
+    Delete(ctx context.Context, id uint) error
+    ExistsByCode(ctx context.Context, code string) (bool, error)
 }
+```
 
+**实现示例**:
+```go
 // 课程仓储实现
 type courseRepository struct {
     db *gorm.DB
 }
 
-func (r *courseRepository) Create(course *Course) (*Course, error) {
-    if err := r.db.Create(course).Error; err != nil {
+func NewCourseRepository(db *gorm.DB) CourseRepository {
+    return &courseRepository{db: db}
+}
+
+func (r *courseRepository) Create(ctx context.Context, course *models.Course) (*models.Course, error) {
+    if err := r.db.WithContext(ctx).Create(course).Error; err != nil {
         return nil, err
     }
     return course, nil
 }
 
-func (r *courseRepository) GetByTeacherID(teacherID string) ([]*Course, error) {
-    var courses []*Course
-    err := r.db.Where("teacher_id = ?", teacherID).
+func (r *courseRepository) FindByTeacherID(ctx context.Context, teacherID uint) ([]*models.Course, error) {
+    var courses []*models.Course
+    err := r.db.WithContext(ctx).Where("teacher_id = ?", teacherID).
         Preload("Teacher").
         Preload("Students").
         Find(&courses).Error
