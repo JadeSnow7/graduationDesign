@@ -18,6 +18,7 @@
 
 \subsection{训练与评测链路}
 为支持模型定制与持续迭代，平台提供完整的后训练工具链：数据规范化确保训练与上线协议一致；数据蒸馏与 smoke 验证作为质量门禁；LoRA/QLoRA 参数高效微调输出可版本化的 adapter；离线回归评测通过固定评测集量化引用一致性、工具调用准确率与结构化输出稳定性等指标。
+在 2026-02-13（UTC）完成的 8B+QLoRA 训练框架对比中，\texttt{all} 阶段满足最小可比较条件并得到 \texttt{RECOMMEND\_SWITCH}（建议切换到 \texttt{ms-swift}）；\texttt{style} 与 \texttt{writing} 由于成功样本数不足被标记为 \texttt{INCONCLUSIVE}，因此该结论定位为工程训练框架选择，不替代模型能力上限评估结论。
 
 \section{主要贡献}
 本文的主要贡献可归纳为以下五点：
@@ -52,6 +53,7 @@
   \item \textbf{多模态能力}：引入图像理解，支持手写作业识别与公式图片解析。
   \item \textbf{学习分析可视化}：为教师提供班级学情看板，展示薄弱点分布与能力发展趋势。
   \item \textbf{异构加速生态完善}：跟进 Ascend 与 Xilinx 软件栈更新，探索 Reranker 的 FPGA 加速与混合精度量化。
+  \item \textbf{框架对比证据补全}：补齐 \texttt{style}/\texttt{writing} 阶段的成功运行数（每框架至少 2 个 \texttt{SUCCESS}），解除 \texttt{INCONCLUSIVE} 并进一步验证框架切换结论的稳定性。
 \end{enumerate}
 
 \section{结语}

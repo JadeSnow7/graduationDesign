@@ -269,6 +269,62 @@ FPGA 方案的端到端延迟与 GPU 方案基本持平，瓶颈已从 Embedding
 
 以上结果仅说明“训练—评测—文档同步”链路已跑通；由于样本规模较小且包含随机合成数据，不应作为正式最终效果结论。
 
+\subsection{8B+QLoRA 训练框架对比实验（2026-02-13）}
+为在云侧 8B+QLoRA 训练中进行工程化框架选型，本文补充了 \texttt{ms-swift} 与 \texttt{custom} 两条训练链路的同口径对比。该实验目标是“训练框架决策”，不是“模型能力上限刷新”；因此本节结论与表~\ref{tab:eval-metrics} 侧重不同，前者回答工程选型，后者回答能力评估。
+
+实验结果来自批次 \texttt{swift-vs-custom-8b-qlora-20260210T0715Z} 的 \texttt{comparison\_summary.md}（路径位于 \texttt{outputs/training\_compare}）。实验总运行数为 12，汇总时间戳为 2026-02-13T10:21:51Z（UTC）。执行时固定 CLI-only 入口、Qwen3-8B 基座、QLoRA（4bit NF4）、串行调度、统一解码参数与统一 \texttt{metrics.json} 聚合口径。本文沿用以下术语：\texttt{RECOMMEND\_SWITCH}（建议切换）、\texttt{INCONCLUSIVE}（证据不足）、\texttt{Comparable}（是否满足最小可比较条件）、\texttt{Stability Risk}（是否触发稳定性风险）、\texttt{Gate}（核心门禁指标）。
+
+\begin{table}[htbp]
+  \centering
+  \caption{8B+QLoRA 框架对比的 Stage 决策结果}
+  \label{tab:framework-compare-stage-decision}
+  \small
+  \begin{tabular}{lccc p{5.5cm}}
+    \toprule
+    Stage & Decision & Comp. & Risk & Reasons \\
+    \midrule
+    style & INCONCLUSIVE & False & False & CUSTOM\_SUCCESS\_LT\_2,\newline SWIFT\_SUCCESS\_LT\_2 \\
+    writing & INCONCLUSIVE & False & False & CUSTOM\_SUCCESS\_LT\_2,\newline SWIFT\_SUCCESS\_LT\_2 \\
+    all & RECOMMEND\_SWITCH & True & False & N/A \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{all Stage 的 Gate 指标对比（ms-swift vs custom）}
+  \label{tab:framework-compare-all-gate}
+  \small
+  \begin{tabular}{lccccc}
+    \toprule
+    Metric & Custom Mean & Swift Mean & Delta & Custom Std & Swift Std \\
+    \midrule
+    key\_point\_coverage & 0.5033 & 0.5017 & -0.0017 & 0.0033 & 0.0029 \\
+    refusal\_accuracy & 0.8417 & 0.8333 & -0.0083 & 0.0144 & 0.0000 \\
+    tool\_call\_accuracy & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{all Stage 的效率与稳定性摘要}
+  \label{tab:framework-compare-efficiency}
+  \begin{tabular}{lc}
+    \toprule
+    指标 & 数值 \\
+    \midrule
+    relative\_time\_gain & -0.0412 \\
+    absolute\_time\_gain\_sec & -41.04 \\
+    relative\_memory\_gain & 1.0000 \\
+    efficiency\_pass & PASS \\
+    stability\_risk & False \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+按 Gate 规则（逐指标要求 \texttt{mean(swift)-mean(custom) >= -0.02}）计算，\texttt{all} stage 三项 Gate 指标全部通过，且无稳定性风险，因此决策为 \texttt{RECOMMEND\_SWITCH}。需要强调的是：本次“推荐切换”来自既定决策规则，不等价于“训练时间更快”；在 \texttt{all} stage 中，\texttt{relative\_time\_gain=-0.0412} 与 \texttt{absolute\_time\_gain\_sec=-41.04} 显示本轮 swift 并未体现时间优势。此外，\texttt{tool\_call\_accuracy} 两侧均为 0.0000，本轮对该指标的区分度有限。由于 \texttt{style/writing} 尚未满足最小成功样本数，这两组结果仅作观察，不作为统计推断依据。
+
 \section{典型场景案例}
 
 \subsection{电磁场场景}
