@@ -1854,6 +1854,219 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/UserStats' }
 
+  /users/me/ai-config:
+    get:
+      summary: 获取当前用户 AI 配置
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key: { type: string, nullable: true }
+                  default_mode: { type: string, enum: [local, server, auto] }
+                  server_url: { type: string, nullable: true }
+                  provider: { type: string, nullable: true }
+                  custom_base_url: { type: string, nullable: true }
+                required: [default_mode]
+    patch:
+      summary: 更新当前用户 AI 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key: { type: string, nullable: true }
+                default_mode: { type: string, enum: [local, server, auto] }
+                server_url: { type: string, nullable: true }
+                provider: { type: string, nullable: true }
+                custom_base_url: { type: string, nullable: true }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key: { type: string, nullable: true }
+                  default_mode: { type: string, enum: [local, server, auto] }
+                  server_url: { type: string, nullable: true }
+                  provider: { type: string, nullable: true }
+                  custom_base_url: { type: string, nullable: true }
+                required: [default_mode]
+
+  /users/me/dashboard:
+    get:
+      summary: 学习中枢聚合数据
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activity_heatmap:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date: { type: string, format: date }
+                        hours: { type: number }
+                      required: [date, hours]
+                  knowledge_bases_count: { type: integer }
+                  pending_assignments_count: { type: integer }
+                  writing_radar:
+                    type: object
+                    properties:
+                      逻辑性: { type: number }
+                      创造力: { type: number }
+                      深度: { type: number }
+                      表达清晰度: { type: number }
+                      引用规范: { type: number }
+                      原创性: { type: number }
+                required:
+                  - activity_heatmap
+                  - knowledge_bases_count
+                  - pending_assignments_count
+
+  /users/me/knowledge-bases:
+    get:
+      summary: 知识库列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+                    file_count: { type: integer }
+                    updated_at: { type: string, format: date-time }
+                  required: [id, name, file_count]
+    post:
+      summary: 创建知识库
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+              required: [name]
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  name: { type: string }
+                  file_count: { type: integer }
+                  updated_at: { type: string, format: date-time }
+                required: [id, name, file_count]
+
+  /workspace/jobs:
+    get:
+      x-status: planned
+      description: "⚠️ 计划中（Planned）：后端路由尚未注册，当前不可调用。"
+      summary: 工作台任务列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    name: { type: string }
+                    status: { type: string, enum: [queued, running, completed, failed] }
+                    progress: { type: integer }
+                    cpu_usage: { type: number }
+                    gpu_usage: { type: number }
+                    memory_used: { type: string }
+                    created_at: { type: string, format: date-time }
+                  required: [id, name, status, progress]
+
+  /workspace/jobs/{jobId}:
+    get:
+      x-status: planned
+      description: "⚠️ 计划中（Planned）：后端路由尚未注册，当前不可调用。"
+      summary: 工作台任务详情
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  status: { type: string, enum: [queued, running, completed, failed] }
+                  progress: { type: integer }
+                  cpu_usage: { type: number }
+                  gpu_usage: { type: number }
+                  memory_used: { type: string }
+                  result:
+                    type: object
+                    nullable: true
+                    properties:
+                      png_base64: { type: string }
+                      created_at: { type: string, format: date-time }
+                  created_at: { type: string, format: date-time }
+                required: [id, name, status, progress]
+
+  /workspace/simulations:
+    post:
+      x-status: planned
+      description: "⚠️ 计划中（Planned）：后端路由尚未注册，当前不可调用。"
+      summary: 提交工作台仿真任务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: string }
+                frequency_mhz: { type: number }
+                grid_resolution: { type: string, enum: [coarse, medium, fine] }
+                boundary_condition: { type: string, enum: [pml, pec, periodic] }
+                duration_ns: { type: number }
+              required: [type, grid_resolution, boundary_condition]
+      responses:
+        '202':
+          description: 已受理
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string, enum: [queued, running] }
+                required: [id, status]
+
   /sim/{endpoint}:
     post:
       summary: 仿真接口（通配）

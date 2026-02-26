@@ -1,310 +1,272 @@
 # 认证接口
 
-## 概述
+> 所有 API 接口使用 `Bearer Token` 鉴权。本页文档化认证相关的全部端点、令牌生命周期与错误处理规范。
 
-认证系统支持两种登录方式：
-1. 用户名密码登录
-2. 企业微信 OAuth 登录
+## 认证方式概览
 
-所有认证接口都返回 JWT Token，用于后续 API 调用的身份验证。
+平台支持两种登录方式，均返回相同结构的 JWT Token：
 
-## 接口列表
+| 方式 | 端点 | 适用场景 |
+|------|------|---------|
+| 用户名 + 密码 | `POST /api/v1/auth/login` | Web / Desktop / Mobile 登录 |
+| 企业微信 OAuth | `POST /api/v1/auth/wecom` | 企业微信客户端内嵌场景 |
 
-### 1. 健康检查
+---
 
-检查服务状态。
+## JWT Token 鉴权流程
 
-**接口地址**: `GET /healthz`
+```mermaid
+sequenceDiagram
+    participant C as 客户端
+    participant BE as 后端 (Go + Gin)
+    participant DB as MySQL
 
-**请求参数**: 无
+    C->>BE: POST /api/v1/auth/login<br/>{"username","password"}
+    BE->>DB: 查询用户 + bcrypt 密码验证
+    DB-->>BE: User{id, role, permissions}
+    BE->>BE: 生成 JWT（HS256，含 user_id/role/exp）
+    BE-->>C: 200 {"access_token","expires_in":604800}
 
-**响应示例**:
+    Note over C: 存入 localStorage / SecureStore
+
+    C->>BE: 受保护接口请求<br/>Authorization: Bearer <token>
+    BE->>BE: 验证签名 + 检查 exp
+    BE->>BE: 提取 user_id / role，RBAC 权限校验
+    BE-->>C: 200 业务数据
+
+    Note over C,BE: Token 过期时
+    C->>BE: 请求（过期 Token）
+    BE-->>C: 401 TOKEN_EXPIRED
+    C->>C: 清除本地 Token<br/>跳转 /login
+```
+
+---
+
+## 端点详情
+
+### `POST /api/v1/auth/login` — 用户名密码登录
+
+**请求体：**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "status": "ok"
-  }
+  "username": "student",
+  "password": "student123"
 }
 ```
 
-### 2. 用户名密码登录
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `username` | string | ✅ | 用户名 |
+| `password` | string | ✅ | 明文密码（传输层 HTTPS 加密） |
 
-使用用户名和密码进行登录认证。
+**响应（200）：**
 
-**接口地址**: `POST /api/v1/auth/login`
-
-**请求参数**:
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-
-**响应示例**:
-```json
-{
-  "success": true,
-  "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "Bearer",
-    "expires_in": 86400,
-    "user_id": "1",
-    "username": "admin",
-    "role": "admin"
-  }
-}
-```
-
-**错误响应**:
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_CREDENTIALS",
-    "message": "用户名或密码错误"
-  }
-}
-```
-
-### 3. 获取当前用户信息
-
-获取当前登录用户的详细信息。
-
-**接口地址**: `GET /api/v1/auth/me`
-
-**请求头**:
-```
-Authorization: Bearer <jwt_token>
-```
-
-**响应示例**:
-```json
-{
-  "success": true,
-  "data": {
-    "id": "1",
-    "username": "admin",
-    "name": "系统管理员",
-    "email": "admin@example.com",
-    "role": "admin",
-    "permissions": [
-      "course:read",
-      "course:write",
-      "ai:use",
-      "sim:use",
-      "user:manage"
-    ],
-    "created_at": "2025-01-01T00:00:00Z",
-    "last_login": "2025-12-23T09:30:00Z"
-  }
-}
-```
-
-## 企业微信 OAuth 登录
-
-### 4. 获取企业微信授权 URL
-
-生成企业微信授权登录的 URL。
-
-**接口地址**: `GET /api/v1/auth/wecom/oauth-url`
-
-**请求参数**:
-- `redirect_uri` (query): 授权回调地址
-
-**响应示例**:
-```json
-{
-  "success": true,
-  "data": {
-    "oauth_url": "https://open.weixin.qq.com/connect/oauth2/authorize?appid=...&redirect_uri=...&response_type=code&scope=snsapi_base&state=..."
-  }
-}
-```
-
-### 5. 企业微信 OAuth 登录
-
-使用企业微信授权码进行登录。
-
-**接口地址**: `POST /api/v1/auth/wecom`
-
-**请求参数**:
-```json
-{
-  "code": "xxxxxx"
-}
-```
-
-**响应示例**:
 ```json
 {
   "success": true,
   "data": {
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "token_type": "Bearer",
-    "expires_in": 86400,
-    "user_id": "2",
-    "name": "张三",
-    "wecom_user_id": "zhangsan",
+    "expires_in": 604800,
+    "user_id": 3,
+    "username": "student",
     "role": "student"
   }
 }
 ```
 
-### 6. 企业微信 JS-SDK 配置
+**错误响应：**
 
-获取企业微信 JS-SDK 的配置信息。
+| HTTP 状态码 | `error.code` | 场景 |
+|------------|--------------|------|
+| 401 | `INVALID_CREDENTIALS` | 用户名或密码错误 |
+| 429 | `RATE_LIMIT_EXCEEDED` | 登录频率超限（`authLimiter`：每 12s 5 次） |
 
-**接口地址**: `POST /api/v1/auth/wecom/jsconfig`
+---
 
-**请求参数**:
-```json
-{
-  "url": "https://example.com/current-page"
-}
-```
+### `GET /api/v1/auth/me` — 获取当前用户信息
 
-**响应示例**:
-```json
-{
-  "success": true,
-  "data": {
-    "appId": "wx1234567890abcdef",
-    "timestamp": 1640000000,
-    "nonceStr": "randomstring",
-    "signature": "signature_string"
-  }
-}
-```
+前端在每次刷新页面时调用此接口恢复会话（详见 `code/frontend/src/domains/auth/useAuth.tsx`）。
 
-## JWT Token 说明
-
-### Token 结构
-JWT Token 包含以下信息：
-- `user_id`: 用户 ID
-- `username`: 用户名
-- `role`: 用户角色
-- `permissions`: 用户权限列表
-- `exp`: 过期时间
-- `iat`: 签发时间
-
-### Token 使用
-在需要认证的接口请求中，需要在请求头中包含 JWT Token：
+**请求头：**
 
 ```http
 Authorization: Bearer <jwt_token>
 ```
 
-### Token 过期处理
-- Token 默认有效期为 24 小时
-- Token 过期后需要重新登录获取新的 Token
-- 前端应监听 401 状态码，自动跳转到登录页面
-
-## 权限验证
-
-### 权限检查流程
-1. 验证 JWT Token 的有效性
-2. 提取用户角色和权限信息
-3. 检查当前接口所需的权限
-4. 返回权限验证结果
-
-### 权限不足处理
-当用户权限不足时，返回 403 状态码：
+**响应（200）：**
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INSUFFICIENT_PERMISSIONS",
-    "message": "权限不足，无法访问该资源",
-    "required_permission": "course:write"
+  "success": true,
+  "data": {
+    "id": 3,
+    "username": "student",
+    "name": "测试学生",
+    "role": "student",
+    "permissions": ["course:read", "ai:use", "sim:use"]
   }
 }
 ```
 
-## 安全注意事项
+TypeScript 类型（来自 `@classplatform/shared`）：
 
-### 密码安全
-- 密码使用 bcrypt 进行哈希存储
-- 支持密码复杂度验证
-- 登录失败次数限制
-
-### Token 安全
-- JWT 使用 HMAC SHA256 签名
-- Token 包含过期时间验证
-- 支持 Token 黑名单机制
-
-### 企业微信安全
-- 验证企业微信回调的合法性
-- 使用 HTTPS 进行数据传输
-- 定期更新企业微信应用密钥
-
-## 示例代码
-
-### JavaScript/TypeScript
 ```typescript
-// 登录
-const login = async (username: string, password: string) => {
-  const response = await fetch('/api/v1/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
-  });
-  
-  const result = await response.json();
-  if (result.success) {
-    localStorage.setItem('token', result.data.access_token);
-    return result.data;
-  } else {
-    throw new Error(result.error.message);
-  }
-};
-
-// 获取用户信息
-const getCurrentUser = async () => {
-  const token = localStorage.getItem('token');
-  const response = await fetch('/api/v1/auth/me', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-  
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result?.error?.message || '获取用户信息失败');
-  }
-  return result.data;
+// code/shared/src/types/auth.ts
+export type MeResponse = {
+  id: number;
+  username: string;
+  name?: string;
+  role: string;
+  permissions: string[];
 };
 ```
 
-### Python
-```python
-import requests
+---
 
-# 登录
-def login(username: str, password: str):
-    response = requests.post('/api/v1/auth/login', json={
-        'username': username,
-        'password': password
-    })
-    
-    result = response.json()
-    if result['success']:
-        return result['data']['access_token']
-    else:
-        raise Exception(result['error']['message'])
+## 企业微信 OAuth 登录流程
 
-# 获取用户信息
-def get_current_user(token: str):
-    response = requests.get('/api/v1/auth/me', headers={
-        'Authorization': f'Bearer {token}'
-    })
-    
-    result = response.json()
-    if not result.get('success'):
-        raise Exception(result.get('error', {}).get('message', '获取用户信息失败'))
-    return result.get('data')
+```mermaid
+sequenceDiagram
+    participant WC as 企业微信客户端
+    participant FE as 前端 H5
+    participant BE as 后端 (Go)
+    participant WECOM as 企业微信服务器
+
+    WC->>FE: 打开内嵌 H5 应用
+    FE->>BE: GET /api/v1/auth/wecom/oauth-url?redirect_uri=...
+    BE-->>FE: {"oauth_url": "https://open.weixin.qq.com/..."}
+    FE->>WC: 跳转至 oauth_url（静默授权）
+    WC->>WECOM: 用户同意授权
+    WECOM-->>WC: 回调 redirect_uri?code=xxxxxx
+    WC->>FE: 渲染回调页 WeComCallbackPage
+    FE->>BE: POST /api/v1/auth/wecom {"code":"xxxxxx"}
+    BE->>WECOM: 用 code 换取 userid
+    WECOM-->>BE: {"userid":"zhangsan"}
+    BE->>DB: 查找或创建用户
+    BE->>BE: 生成 JWT
+    BE-->>FE: {"access_token":"...","role":"student"}
+    FE->>FE: 存储 Token，跳转首页
 ```
+
+### `GET /api/v1/auth/wecom/oauth-url` — 获取授权 URL
+
+**查询参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `redirect_uri` | string | ✅ | 授权后的回调地址（需已在企业微信后台注册） |
+
+**响应（200）：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "oauth_url": "https://open.weixin.qq.com/connect/oauth2/authorize?appid=ww...&redirect_uri=...&response_type=code&scope=snsapi_base&state=..."
+  }
+}
+```
+
+---
+
+### `POST /api/v1/auth/wecom` — 企业微信授权码登录
+
+**请求体：**
+
+```json
+{
+  "code": "xxxxxxxxxxxxxx"
+}
+```
+
+**响应（200）：** 与密码登录结构相同，包含 `access_token`、`role` 等字段。
+
+---
+
+### `GET /api/v1/auth/wecom/jsconfig` — JS-SDK 配置
+
+用于初始化企业微信 JS-SDK（网页内调用微信 API）。
+
+**查询参数：**
+
+| 参数 | 类型 | 必填 |
+|------|------|------|
+| `url` | string | ✅ 当前页面 URL（需 URL 编码） |
+
+**响应（200）：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "appId": "ww1234567890abcdef",
+    "timestamp": 1740000000,
+    "nonceStr": "randomstring",
+    "signature": "sha1_signature_string"
+  }
+}
+```
+
+---
+
+## Token 规范
+
+### JWT Payload 结构
+
+```json
+{
+  "user_id": 3,
+  "username": "student",
+  "role": "student",
+  "exp": 1740086400,
+  "iat": 1740000000
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `user_id` | 数据库主键 ID（整型） |
+| `role` | `admin` \| `teacher` \| `assistant` \| `student` |
+| `exp` | Unix 时间戳，默认 7 天（604800 秒）后过期 |
+
+::: info 前端 Token 管理
+Token 在 Web 端存储于 `localStorage`（`code/frontend/src/lib/auth-store.ts`）。Mobile 端使用 Expo SecureStore。API Client 自动注入 `Authorization: Bearer <token>` 请求头，401 响应时自动清除 Token 并跳转登录页。
+:::
+
+### Token 使用
+
+```typescript
+// 所有受保护接口均通过 @classplatform/shared 的 API Client 自动处理
+import { api } from '@/lib/api-client';  // Web 端
+
+// 示例：获取课程列表（Token 自动附加）
+const courses = await api.course.list();
+```
+
+---
+
+## 错误码一览
+
+| HTTP | `error.code` | 描述 |
+|------|--------------|------|
+| 400 | `VALIDATION_ERROR` | 请求参数格式错误 |
+| 401 | `INVALID_CREDENTIALS` | 用户名/密码错误 |
+| 401 | `TOKEN_EXPIRED` | JWT 已过期 |
+| 401 | `TOKEN_INVALID` | JWT 签名无效或格式错误 |
+| 403 | `INSUFFICIENT_PERMISSIONS` | 角色权限不足 |
+| 429 | `RATE_LIMIT_EXCEEDED` | 登录接口频率超限 |
+
+::: warning 安全注意事项
+- 密码使用 `bcrypt` 哈希存储，不明文保存
+- 登录接口受独立速率限制器保护（`authLimiter`：每用户每 12 秒最多 5 次）
+- 生产环境必须通过 HTTPS 传输，`BACKEND_JWT_SECRET` 至少 32 字符随机字符串
+- **生产环境建议**：当前 7 天 TTL 适用于开发/演示场景；生产部署时建议缩短至 1～8 小时，配合 Refresh Token 或重登录机制，降低 Token 泄露后的暴露窗口
+:::
+
+## 相关文档
+
+- [RBAC 权限模型](/05-explanation/rbac-model)
+- [系统设计](/05-explanation/system-design)
+- [环境变量配置](/04-reference/config/)

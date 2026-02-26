@@ -1,185 +1,369 @@
-# 系统架构总览
+# 系统设计与架构总览
 
-## 1. 目标与原则
+> 本文档为平台架构权威参考，涵盖系统整体拓扑、端云协同机制、模块职责边界与关键设计决策。
 
-### 1.1 设计目标
-- **统一入口**：企业微信内嵌 H5（同时兼容普通浏览器）承载核心流程：课程 → AI/学情 → 课程专属工具
-- **后端统一治理**：教学业务后端统一鉴权（JWT）、权限（RBAC）、审计/限流入口（预留），对 AI/课程工具进行网关式调度
-- **能力服务化**：AI 与课程工具拆为独立服务，便于替换上游模型/工具实现与独立扩容
-- **可追溯 AI**：可选 GraphRAG（本地知识库检索增强），降低幻觉并支持引用片段编号
+## 1. 设计目标与原则
+
+### 1.1 核心目标
+
+| 目标 | 说明 |
+|------|------|
+| **以学生为中心** | 长期学习档案追踪、跨课程薄弱点记录、个性化 AI 辅导 |
+| **端云协同** | 学生隐私数据本地优先处理，仅在端侧资源不足时才 fallback 至云端 |
+| **能力服务化** | AI 与仿真独立为微服务，可独立扩容、替换上游模型 |
+| **可追溯 AI** | GraphRAG 支持引用来源编号，降低幻觉风险 |
+| **多端一致** | Web / Mobile / Desktop / 企业微信 共享同一 API 契约与类型体系 |
 
 ### 1.2 设计原则
-- **关注点分离**：代码、文档、学术材料完全分离
-- **模块化设计**：每个组件都有独立的职责和接口
-- **可扩展性**：支持功能模块的独立扩展和替换
-- **标准化**：遵循行业标准的接口和协议
 
-## 2. 整体架构
+- **关注点分离**：Handler → Service → Repository 三层，职责不得跨越
+- **契约优先**：`docs/04-reference/api/openapi.yaml` 是前后端唯一契约源，改代码前先改契约
+- **最小权限**：RBAC 角色从 `student < teacher < admin` 逐级授权，无越权访问
+- **配置驱动**：功能开关（多模态、GraphRAG、仿真模块）均通过环境变量控制，无代码侵入
 
-### 2.1 分层架构
+---
+
+## 2. 系统整体拓扑
+
+```mermaid
+graph TB
+    subgraph CLIENT["客户端层"]
+        direction LR
+        WEB["🌐 Web\nReact 19 + Vite\nlocalhost:5173"]
+        MOB["📱 Mobile\nExpo (iOS/Android)"]
+        DESK["🖥️ Desktop\nTauri + Rust"]
+        WCOM["💬 企业微信\nWebView / H5"]
+    end
+
+    subgraph SDK["共享 SDK（@classplatform/shared）"]
+        SDKT["TypeScript 类型\n15 个领域模块"]
+        SDKC["API Client 工厂\ncreateApi()"]
+    end
+
+    subgraph BACKEND["后端网关 (Go 1.24 + Gin · :8080)"]
+        direction TB
+        MW["中间件链\nRequestID → Logger → CORS → RateLimit"]
+        AUTH_MW["JWT 鉴权中间件\nRBAC 权限校验"]
+        ROUTES["路由层 /api/v1/*\n16 个路由组"]
+        SVC["Service 层\n业务逻辑"]
+        REPO["Repository 层\nGORM ORM"]
+    end
+
+    subgraph AISTACK["AI 服务 (Python FastAPI · :8001)"]
+        direction TB
+        ROUTER["模型路由器\nmodel_router.py"]
+        SESS["会话管理\nsession.py"]
+        PROF["学生画像\nstudent_profile.py"]
+        WPD["薄弱点检测\nweak_point_detector.py"]
+        GRAG["GraphRAG 引擎\ngraphrag/"]
+        SKILLS["技能模块\nskills/"]
+    end
+
+    subgraph SIMSTACK["仿真服务 (Python FastAPI · :8002)"]
+        direction LR
+        ES["静电学\nelectrostatics"]
+        MS["磁静学\nmagnetostatics"]
+        WV["波动\nwave (FDTD)"]
+        NUM["数值计算\nnumerical"]
+    end
+
+    subgraph DATA["数据层"]
+        MYSQL[("MySQL 8.4\n:3306\n用户/课程/作业/事件")]
+        MINIO["MinIO\n:9000/:9001\n文件/图片/附件"]
+        VIDX["向量索引\nFAISS / 本地文件\nGraphRAG Embeddings"]
+    end
+
+    subgraph EDGE["端侧推理"]
+        VLLM_T["vLLM (Text)\nQwen3-7B\nNPU / GPU"]
+        VLLM_V["vLLM (Vision)\nQwen3-VL\nGPU"]
+    end
+
+    subgraph CLOUD["云端 API (Fallback)"]
+        DASHSCOPE["DashScope\nQwen-Plus / Max"]
+        OPENAI["OpenAI Compatible\n任意兼容端点"]
+    end
+
+    CLIENT -->|"HTTPS + Bearer Token"| SDK
+    SDK -->|"HTTP /api/v1/*"| MW
+    MW --> AUTH_MW --> ROUTES --> SVC --> REPO
+    REPO -->|GORM| MYSQL
+    SVC -->|S3 API| MINIO
+    ROUTES -->|"共享令牌 AI_GATEWAY_SHARED_TOKEN"| AISTACK
+    ROUTES -->|"直连"| SIMSTACK
+    AISTACK --> ROUTER
+    ROUTER -->|"local_first"| VLLM_T & VLLM_V
+    VLLM_T & VLLM_V -.->|"超时/OOM/5xx\n同族 fallback"| DASHSCOPE & OPENAI
+    AISTACK --> GRAG --> VIDX
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        客户端层                              │
-│  企业微信客户端 (WebView)  │  普通浏览器 (Chrome/Edge)      │
-└─────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────┐
-│                        前端层                                │
-│            React + TypeScript + Vite Web 应用               │
-│  登录 │ 课程管理 │ AI 对话 │ 课程工具 │ 学情分析            │
-└─────────────────────────────────────────────────────────────┘
-                                │ HTTP/JSON
-┌─────────────────────────────────────────────────────────────┐
-│                        网关层                                │
-│                   Go + Gin 后端服务                         │
-│  鉴权 │ 权限 │ 课程API │ AI网关 │ 工具网关 │ 企微OAuth       │
-└─────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────┐
-│                        服务层                                │
-│    AI 服务 (FastAPI)    │  课程工具服务 (FastAPI)         │
-│  大模型对接 │ GraphRAG   │  专属工具 │ 可视化输出            │
-└─────────────────────────────────────────────────────────────┘
-                                │
-┌─────────────────────────────────────────────────────────────┐
-│                        数据层                                │
-│     MySQL 数据库        │    文件存储    │   向量索引        │
-│  用户 │ 课程 │ 作业     │  附件 │ 图片   │  知识库 Embedding │
-└─────────────────────────────────────────────────────────────┘
-```
 
-### 2.2 技术栈选择
+---
 
-| 层级 | 技术选择 | 选择理由 |
-|------|----------|----------|
-| 前端 | React + TypeScript + Vite | 组件化生态成熟、工程化完善、适配 WebView/浏览器场景 |
-| 后端 | Go + Gin | 高性能、并发友好、部署简单 |
-| AI 服务 | Python + FastAPI | 丰富的 AI 生态、异步支持 |
-| 课程工具服务 | Python + NumPy/SciPy | 科学计算/工具生态成熟 |
-| 数据库 | MySQL | 成熟稳定、事务支持 |
-| 容器化 | Docker + Docker Compose | 环境一致性、部署便利 |
+## 3. 端云协同机制
 
-## 3. 核心组件
+### 3.1 路由策略总览
 
-### 3.1 前端应用 (Frontend)
-- **技术栈**：React + TypeScript + Vite（状态管理可选 Zustand）
-- **主要功能**：
-  - 用户界面展示
-  - 用户交互处理
-  - API 调用封装
-  - 状态管理
-- **特点**：
-  - 响应式设计，适配移动端
-  - 企业微信内嵌优化
-  - 组件化开发
+平台 AI 推理请求遵循**端云分层路由**原则。路由决策发生在 `code/ai_service/app/model_router.py`：
 
-### 3.2 后端网关 (Backend Gateway)
-- **技术栈**：Go + Gin + GORM
-- **主要功能**：
-  - 统一鉴权和权限控制
-  - 业务逻辑处理
-  - 服务调度和路由
-  - 数据持久化
-- **特点**：
-  - 高并发处理能力
-  - 微服务网关模式
-  - RESTful API 设计
-
-### 3.3 AI 服务 (AI Service)
-- **技术栈**：Python + FastAPI + LangChain
-- **主要功能**：
-  - 大模型接口封装
-  - GraphRAG 知识检索
-  - 多模式 Prompt 管理
-  - 流式响应处理
-- **特点**：
-  - 模块化 Prompt 设计
-  - 可插拔的 RAG 系统
-  - 异步处理支持
-
-### 3.4 课程工具服务 (Course Tool Service)
-- **技术栈**：Python + FastAPI + NumPy/SciPy + Matplotlib
-- **主要功能**：
-  - 课程专属工具能力（仿真/实验/写作分析等）
-  - 可视化与结果输出
-  - 参数化任务执行
-  - 课程级扩展与隔离
-- **特点**：
-  - 丰富的物理模型库
-  - 高质量可视化输出
-  - 参数验证和错误处理
-
-## 4. 数据架构
-
-### 4.1 数据存储策略
-- **关系型数据**：MySQL 存储用户、课程、作业等结构化数据
-- **文件存储**：本地文件系统存储附件、图片、生成的图表
-- **向量数据**：FAISS/Chroma 存储知识库 Embeddings
-- **缓存数据**：Redis（可选）用于会话和临时数据
-
-### 4.2 数据流设计
 ```mermaid
 flowchart TD
-    A[用户请求] --> B[前端应用]
-    B --> C[后端网关]
-    C --> D{请求类型}
-    D -->|业务数据| E[MySQL 数据库]
-    D -->|AI 请求| F[AI 服务]
-    D -->|课程工具请求| G[课程工具服务]
-    F --> H[向量数据库]
-    F --> I[外部 LLM]
-    G --> J[计算引擎]
-    G --> K[图像生成]
-    E --> L[响应数据]
-    F --> L
-    G --> L
-    L --> B
-    B --> M[用户界面]
+    REQ["AI 请求\n携带 model_family + needs_vision"]
+    POLICY{"`LLM_ROUTING_POLICY`"}
+    LOCAL_FIRST["local_first\n（默认生产策略）"]
+    CLOUD_ONLY["cloud_only\n（无端侧模型时）"]
+    AUTO["auto\n（动态评估）"]
+
+    FAMILY{model_family?}
+    VISION{needs_vision?}
+    LOCAL_T["→ 本地 vLLM (Text)\nQwen3-7B @ NPU/CPU"]
+    LOCAL_V["→ 本地 vLLM (VL)\nQwen3-VL @ GPU"]
+    ERR["✗ 返回错误\nMODEL_NOT_SUPPORT_VISION"]
+
+    FB_T["fallback → 云端 Text\n仅同族：qwen3"]
+    FB_V["fallback → 云端 VL\n仅同族：qwen3-vl"]
+
+    REQ --> POLICY
+    POLICY --> LOCAL_FIRST & CLOUD_ONLY & AUTO
+    LOCAL_FIRST --> FAMILY
+    FAMILY -->|"qwen3 / auto + no vision"| VISION
+    FAMILY -->|"qwen3_vl / auto + vision"| LOCAL_V
+    VISION -->|"false"| LOCAL_T
+    VISION -->|"true + qwen3"| ERR
+    LOCAL_T -->|"本地失败"| FB_T
+    LOCAL_V -->|"本地失败"| FB_V
 ```
 
-## 5. 安全架构
+### 3.2 何时使用本地端侧（NPU / CPU）
 
-### 5.1 认证机制
-- **JWT Token**：无状态认证，支持分布式部署
-- **企业微信 OAuth**：集成企业身份认证
-- **多因子认证**：预留扩展接口
+| 场景 | 路由 | 原因 |
+|------|------|------|
+| 学生作文辅导（含个人草稿） | 本地 | 含隐私内容，不出园区 |
+| 课堂问答辅助（实时性高） | 本地 | 低延迟，≤300ms p95 |
+| 学生学习档案分析 | 本地 | FERPA 类合规要求 |
+| 简单引导式学习对话 | 本地 | 轻量任务，避免云端费用 |
 
-### 5.2 权限控制
-- **RBAC 模型**：基于角色的访问控制
-- **API 级权限**：细粒度的接口访问控制
-- **数据级权限**：基于用户角色的数据访问限制
+### 3.3 何时 Fallback 至云端 GPU
 
-### 5.3 数据安全
-- **传输加密**：全链路 HTTPS
-- **存储加密**：敏感数据加密存储
-- **输入验证**：防止注入攻击
-- **内容过滤**：AI 输入输出安全检查
+| 触发条件 | 行为 |
+|----------|------|
+| 本地 vLLM 连接超时（`LLM_LOCAL_TIMEOUT_SEC`） | 同族自动 fallback |
+| 本地推理服务 OOM / 5xx 错误 | 同族自动 fallback |
+| `LLM_ROUTING_POLICY=cloud_only` | 绕过本地，直连云端 |
+| 请求显式携带 `route: "cloud"` | 强制云端 |
 
-## 6. 扩展性设计
+::: warning 重要约束
+**多模态失败不跨族降级**：当 `model_family=qwen3_vl` 的本地请求失败时，只会 fallback 到**云端 Qwen3-VL**，不会降级为纯文本 Qwen3 模型返回错误的答案。业务逻辑错误（4xx）不触发 fallback。
+:::
 
-### 6.1 水平扩展
-- **无状态设计**：支持多实例部署
-- **负载均衡**：支持反向代理和负载分发
-- **数据库分片**：支持数据水平分割
+### 3.4 隐私分级
 
-### 6.2 功能扩展
-- **插件化架构**：支持功能模块的动态加载
-- **配置驱动**：通过配置文件控制功能开关
-- **API 版本化**：支持接口的向后兼容
+请求可通过 `privacy` 字段或 `X-Privacy-Level` 请求头声明数据敏感级别：
 
-## 7. 监控与运维
+| 级别 | 含义 | 路由影响 |
+|------|------|----------|
+| `private` | 含用户隐私数据 | 强制本地，cloud_only 环境下拒绝 |
+| `public` | 通用知识问答 | 按正常策略路由 |
 
-### 7.1 监控指标
-- **系统指标**：CPU、内存、磁盘、网络
-- **应用指标**：响应时间、错误率、吞吐量
-- **业务指标**：用户活跃度、功能使用率
+### 3.5 移动端路由说明
 
-### 7.2 日志管理
-- **结构化日志**：统一的日志格式
-- **日志聚合**：集中式日志收集和分析
-- **错误追踪**：异常信息的完整记录
+::: info 移动端依赖服务端路由（不做客户端网络探测）
+Mobile 客户端（Expo React Native）当前**未引入 NetInfo 或其他网络状态感知库**，不在客户端侧做主动路由决策。路由判断完全由服务端 `model_router.py` 执行：
 
-### 7.3 部署策略
-- **容器化部署**：Docker 容器化
-- **编排管理**：Docker Compose 或 Kubernetes
-- **持续集成**：自动化构建和部署流程
+| 情形 | 移动端行为 |
+|------|-----------|
+| 正常请求 | 通过后端网关转发，AI 服务按 `LLM_ROUTING_POLICY` 路由 |
+| 本地推理超时 / 5xx | AI 服务自动 fallback（同族）；Mobile 端仅收到最终结果或错误响应 |
+| 网络完全不可达 | 客户端捕获请求超时异常，展示错误提示，无自动路由切换 |
+
+客户端侧网络探测（如 `@react-native-community/netinfo`）作为**后续优化议题**，当前版本不实现。移动端路由行为的唯一可信来源是**服务端错误码与响应状态**。
+:::
+
+---
+
+## 4. 模块职责边界
+
+### 4.1 后端网关（Go + Gin）
+
+后端是**唯一对外入口**，所有客户端请求必须经过后端鉴权后再转发到下游服务。
+
+```
+/api/v1/
+├── auth/*          → JWT 登录、WeChat Work OAuth
+├── users/*         → 用户统计、AI 配置
+├── courses/*       → 课程 CRUD、章节、资源
+├── assignments/*   → 作业提交、AI 评分
+├── quizzes/*       → 测验管理
+├── ai/*            → 代理转发到 AI Service（注入 user_id）
+├── sim/*           → 代理转发到 Simulation Service
+├── workspace/*     → 异步仿真任务调度（队列 + 状态查询）
+├── writing/*       → 写作模块（写作类型感知，功能门控）
+├── learning-profiles/* → 学习画像（课程级）
+├── students/*/global-profile → 全局学生档案
+└── admin/*         → 管理员接口
+```
+
+::: info 功能门控（Module Gating）
+写作模块（`/api/v1/writing/*`）通过 `RequireWritingModule` 中间件控制，可在课程粒度启用/禁用。详见 `docs/05-explanation/architecture/module-gating-plan.md`。
+:::
+
+### 4.2 AI 服务（Python FastAPI）
+
+AI 服务是**能力引擎**，对后端网关暴露内部路由 `/v1/*`，通过 `AI_GATEWAY_SHARED_TOKEN` 鉴权：
+
+| 路由 | 功能 |
+|------|------|
+| `POST /v1/chat` | 文本对话，支持所有 mode |
+| `POST /v1/chat/multimodal` | 图文混合输入（Qwen3-VL） |
+| `POST /v1/chat_with_tools` | 带工具调用（仿真工作台触发） |
+| `POST /v1/chat/hybrid` | GraphRAG 混合检索增强 |
+| `POST /v1/chat/guided` | 引导式学习结构化输出 |
+| `POST /v1/graphrag/index` | 文档入库 |
+| `DELETE /v1/graphrag/index` | 文档删除 |
+| `GET /v1/skills` | 列出可用技能 |
+
+### 4.3 仿真服务（Python FastAPI）
+
+仿真服务专注**数值计算**，无状态，每次请求独立：
+
+| 路由组 | 物理模型 |
+|--------|---------|
+| `/electrostatics/*` | 点电荷场、Laplace 方程（2D FDM）、Gauss 定律 |
+| `/magnetostatics/*` | Biot-Savart 定律、Ampere 环路 |
+| `/wave/*` | 1D FDTD、Fresnel 系数 |
+| `/numerical/*` | 数值积分、微分、向量运算 |
+
+### 4.4 共享 SDK（@classplatform/shared）
+
+所有前端（Web / Mobile / Desktop）通过 `@classplatform/shared` 包消费统一的 API 类型与客户端工厂：
+
+```typescript
+// 所有端的统一初始化方式
+import { createApi } from '@classplatform/shared';
+
+const api = createApi({
+    baseUrl: process.env.API_BASE_URL || '/api/v1',
+    getAccessToken: () => tokenStore.get(),
+    getTokenType: () => 'Bearer',
+    onUnauthorized: () => { /* redirect to login */ },
+    timeoutMs: 60000,
+});
+```
+
+---
+
+## 5. 数据架构
+
+### 5.1 存储策略
+
+| 数据类型 | 存储 | 说明 |
+|----------|------|------|
+| 用户、课程、作业、测验 | MySQL（GORM） | 结构化事务数据 |
+| 文件附件、图片、报告 | MinIO（S3 兼容） | 对象存储，预签名 URL 下发 |
+| GraphRAG 知识图谱 | 本地 JSON 文件 | `app/data/graphrag_index.json` |
+| 向量 Embeddings | 本地向量文件 | `app/data/vector_index/` |
+| 学习会话状态 | 内存（进程生命周期） | `session.py` 字典缓存 |
+
+### 5.2 学生数据流
+
+```mermaid
+sequenceDiagram
+    participant FE as 前端
+    participant BE as 后端 (Go)
+    participant AI as AI 服务
+    participant DB as MySQL
+
+    FE->>BE: POST /api/v1/ai/chat/guided (JWT)
+    BE->>BE: 验证 JWT，注入 user_id
+    BE->>AI: POST /v1/chat/guided (共享令牌 + user_id)
+    AI->>DB: 读取 learning_profile (通过后端 API)
+    AI->>AI: 生成引导步骤 + 薄弱点检测
+    AI-->>BE: GuidedChatResponse
+    BE->>DB: 写入 learning_event 记录
+    BE-->>FE: 封装后的响应
+```
+
+---
+
+## 6. 认证与权限模型
+
+### 6.1 角色矩阵
+
+| 资源 | student | teacher | admin |
+|------|---------|---------|-------|
+| 查看课程内容 | ✅ | ✅ | ✅ |
+| 提交作业/测验 | ✅ | — | — |
+| 管理课程/成员 | — | ✅ | ✅ |
+| AI 对话 | ✅ | ✅ | ✅ |
+| 写作反馈 | ✅ | ✅ | ✅ |
+| 查看全班学情 | — | ✅ | ✅ |
+| 系统管理 | — | — | ✅ |
+
+### 6.2 Token 生命周期
+
+```mermaid
+stateDiagram-v2
+    [*] --> 未认证
+    未认证 --> 已认证 : POST /auth/login\n或 POST /auth/wecom
+    已认证 --> 已认证 : 携带 Bearer Token 正常请求
+    已认证 --> 未认证 : Token 过期 / 401 响应\n前端自动跳转 /login
+    已认证 --> 未认证 : 手动登出 (清除本地 Token)
+```
+
+---
+
+## 7. 部署拓扑（生产环境）
+
+```mermaid
+graph LR
+    subgraph Campus["校园网"]
+        subgraph Edge["边缘节点 (NPU 服务器)"]
+            EW["Web 前端\nnginx 静态服务"]
+            EB["后端 API\nGo 二进制"]
+            EAI["AI 服务\nFastAPI + vLLM"]
+            ESIM["仿真服务\nFastAPI"]
+        end
+        DB2[("MySQL 主库")]
+        MINIO2["MinIO 集群"]
+    end
+    subgraph CloudGPU["云端 GPU（按需）"]
+        CGPU["云端 vLLM\nQwen-Plus / Max"]
+    end
+    subgraph Clients2["终端"]
+        B["浏览器 / 微信"]
+        APP["手机 App"]
+    end
+
+    B & APP -->|HTTPS| EW
+    EW -->|反向代理| EB
+    EB -->|内网| EAI & ESIM
+    EB --> DB2 & MINIO2
+    EAI -.->|"fallback\n(加密通道)"| CGPU
+```
+
+::: tip 更多部署细节
+- [NPU 分层部署策略](/03-how-to-guides/deployment/npu-tiered-deployment)
+- [Docker 部署指南](/03-how-to-guides/deployment/docker-deployment)
+- [生产环境部署](/03-how-to-guides/deployment/production-deployment)
+:::
+
+---
+
+## 8. 关键技术决策记录
+
+| 决策 | 选择 | 放弃的替代方案 | 理由 |
+|------|------|----------------|------|
+| 后端语言 | Go + Gin | Node.js / Python | 并发性能、二进制部署简单、类型安全 |
+| AI 服务语言 | Python + FastAPI | Go | AI/ML 生态（transformers、FAISS）成熟度 |
+| 前端框架 | React 19 + Vite 7 | Vue / SvelteKit | 团队熟悉度、企业微信 H5 兼容性 |
+| 移动端 | Expo (React Native) | Flutter | 与 Web 共享业务逻辑、JS 生态复用 |
+| Desktop | Tauri (Rust) | Electron | 内存占用低 50%，本地推理安全沙箱 |
+| 数据库 | MySQL 8.4 | PostgreSQL | 国内高校运维熟悉度、分层索引兼容性 |
+| 向量存储 | 本地文件 (FAISS) | Weaviate / Qdrant | 无外部依赖，适合私有化部署 |
+| API 版本 | `/api/v1` 前缀 | URL-less 版本 | 显式版本，便于运维审计与 Nginx 路由 |
+
+---
+
+## 9. 相关架构文档
+
+- [本地 LLM Runtime 架构](/05-explanation/architecture/local-ai-runtime) — Desktop 壳层队列机制与云端职责边界
+- [React 分层架构](/05-explanation/architecture/react-layered-architecture) — 前端领域层与 SDK 结构
+- [Rust 增强 POC 计划](/05-explanation/architecture/rust-enhancement-poc-plan-2026-02-11) — Edge Router 与 Rust core 规划

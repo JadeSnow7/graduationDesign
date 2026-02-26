@@ -10,22 +10,93 @@
 - 不提交敏感信息：密钥、Token、隐私数据必须通过环境变量管理。
 - 所有对外行为变更必须配套文档与测试。
 
+---
+
 ## 2. 提交前检查
 
-- Frontend: `cd code/frontend-react && npm run lint && npm run test -- --run`
-- Backend: `cd code/backend && go test ./...`
-- AI Service: `cd code/ai_service && pytest -q`
-- 文档站点: `npm run docs:build`
+在提交代码前，必须在对应目录执行以下检查：
 
-## 3. Python（AI Service / Simulation）
+```bash
+# Frontend
+cd code/frontend && npm run lint && npm run test -- --run
+
+# Backend
+cd code/backend && go test ./...
+
+# AI Service
+cd code/ai_service && pytest -q
+
+# 文档站点
+npm run docs:build   # 从仓库根目录执行
+```
+
+---
+
+## 3. 多端提交规范（Conventional Commits）
+
+所有提交遵循 [Conventional Commits](https://conventionalcommits.org/) 规范。格式：
+
+```
+<type>(<scope>): <subject>
+```
+
+### 类型（type）
+
+| type | 含义 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | Bug 修复 |
+| `docs` | 仅文档变更 |
+| `refactor` | 重构（无功能变更） |
+| `perf` | 性能优化 |
+| `test` | 新增或修改测试 |
+| `chore` | 构建/工具链变动 |
+| `ci` | CI/CD 配置变更 |
+
+### 作用域（scope）
+
+使用以下预定义的 scope 标注影响范围：
+
+| scope | 对应代码路径 |
+|-------|-------------|
+| `frontend` | `code/frontend/` |
+| `mobile` | `code/mobile/` |
+| `desktop` | `code/desktop-tauri/` |
+| `backend` | `code/backend/` |
+| `ai` | `code/ai_service/` |
+| `sim` | `code/simulation/` |
+| `shared` | `code/shared/` |
+| `docs` | `docs/` |
+| `infra` | `code/docker-compose.yml`、部署配置 |
+
+### 示例
+
+```bash
+feat(frontend): 新增引导式学习进度条组件
+fix(backend): 修复学习画像并发写入竞态条件
+docs(ai): 补充模型路由策略决策树
+refactor(shared): 将 ChatMessage 类型迁移到 shared SDK
+perf(ai): 优化 GraphRAG 向量检索批处理性能
+test(backend): 为 assignment_service 添加覆盖率测试
+```
+
+::: warning 涉及多端的变更
+若单次提交同时修改多个 scope（如 `shared` 类型变更影响 `frontend` + `mobile`），优先使用影响最大的 scope，正文中说明其他受影响模块。
+:::
+
+---
+
+## 4. Python（AI Service / Simulation）
 
 - 遵循 PEP 8，函数与变量使用 `snake_case`，类名使用 `PascalCase`。
 - 公开函数必须有类型注解，复杂结构使用 `TypedDict`/`dataclass`/Pydantic 模型。
 - 异步场景避免阻塞事件循环；外部 I/O 使用异步客户端或线程池包装。
 - 错误处理禁止吞异常；API 层返回统一、可定位的错误码。
-- 模块结构建议：常量 -> 数据模型 -> 纯函数 -> I/O 逻辑。
+- 模块结构建议：常量 → 数据模型 → 纯函数 → I/O 逻辑。
 
-## 4. Go（Backend）
+---
+
+## 5. Go（Backend）
 
 - 必须通过 `go test ./...`，并保持 handler/service/repository 分层职责清晰。
 - 错误处理使用 `fmt.Errorf("...: %w", err)` 传递上下文。
@@ -33,31 +104,168 @@
 - 中间件统一处理请求日志、request_id、鉴权与限流。
 - 对外 API 变更必须同步更新 OpenAPI 与文档。
 
-## 5. Frontend（React）
+---
 
-- 组件拆分遵循“容器/展示”职责分离，避免超大组件。
-- 状态管理优先局部状态，跨页面状态使用统一 store。
-- 接口类型优先复用共享类型，避免手写重复类型导致漂移。
-- 不直接在组件中硬编码 API 地址与密钥，统一通过配置层注入。
-- 页面级功能至少有基础回归测试或关键交互测试。
+## 6. Frontend（React）— 含 Design Token 规范
 
-## 6. API 与契约规范
+### 6.1 组件架构
 
-- 对外契约唯一源：`/Users/huaodong/graduationDesign/docs/04-reference/api/openapi.yaml`。
-- `/api/v1/*` 语义变更必须更新 OpenAPI 与对应测试。
-- `/v1/*`（AI Service 内部）虽不直接受 `openapi.lock.json` 门禁，但必须保持与对外契约一致。
-- 详细边界见：`/Users/huaodong/graduationDesign/docs/04-reference/versioning/api-lock-policy.md`。
+- 组件拆分遵循"容器/展示"职责分离，避免超大组件（单文件建议 < 300 行）。
+- 状态管理优先局部状态，跨页面状态使用 Zustand store（`src/domains/*/` 目录）。
+- 接口类型优先复用 `@classplatform/shared` 共享类型，禁止手写重复类型。
+- 不直接在组件中硬编码 API 地址与密钥，统一通过 `src/lib/api-client.ts` 注入。
 
-## 7. 文档同步规范
+### 6.2 Design Token 规范
 
-- 新增功能：至少更新一处 How-to 或 Explanation 文档。
-- 接口变更：必须更新 `04-reference/api` 下对应页面。
-- 运行/部署相关变更：必须更新 `03-how-to-guides` 对应页面。
-- **功能改动需附计划文档或链接**：对于跨模块改动或架构变更，需使用 [Plan 模式](./plan-mode-workflow.md) 输出实施计划。
+项目使用 **Tailwind CSS v4 + Ant Design 5** 双体系，Token 分两个层次管理：
 
-## 8. 相关文档
+#### 颜色 Token（CSS 变量 + Tailwind）
+
+在 `src/styles/` 中定义语义化 CSS 变量，严禁在组件中直接使用硬编码颜色值：
+
+```css
+/* src/styles/tokens.css */
+:root {
+  /* 品牌主色 */
+  --color-brand-primary: #1677ff;      /* Ant Design Blue */
+  --color-brand-secondary: #4096ff;
+
+  /* 状态色 */
+  --color-success: #52c41a;
+  --color-warning: #faad14;
+  --color-error: #ff4d4f;
+
+  /* 中性色 */
+  --color-text-primary: rgba(0, 0, 0, 0.88);
+  --color-text-secondary: rgba(0, 0, 0, 0.45);
+  --color-bg-base: #ffffff;
+  --color-bg-subtle: #f5f5f5;
+  --color-border: #d9d9d9;
+}
+```
+
+在 Tailwind 配置中映射：
+
+```css
+/* tailwind.config.css —— Tailwind v4 方式 */
+@theme {
+  --color-brand: var(--color-brand-primary);
+  --color-brand-light: var(--color-brand-secondary);
+  --color-muted: var(--color-text-secondary);
+}
+```
+
+#### 间距与排版 Token
+
+| Token | 值 | 用途 |
+|-------|----|------|
+| `--spacing-xs` | 4px | 组件内紧凑间距 |
+| `--spacing-sm` | 8px | 标准内间距 |
+| `--spacing-md` | 16px | 区块间距 |
+| `--spacing-lg` | 24px | 页面内容间距 |
+| `--spacing-xl` | 32px | 大区块分隔 |
+| `--font-size-sm` | 12px | 辅助说明文本 |
+| `--font-size-base` | 14px | 正文 |
+| `--font-size-lg` | 16px | 标题 |
+
+#### Ant Design Token 覆盖
+
+通过 `<ConfigProvider>` 统一覆盖，禁止在单个组件的 `style` prop 中覆盖：
+
+```tsx
+// src/ThemeProvider.tsx
+import { ConfigProvider } from 'antd';
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#1677ff',
+          borderRadius: 6,
+          fontFamily: '"PingFang SC", "Microsoft YaHei", sans-serif',
+        },
+        components: {
+          Button: { borderRadiusLG: 8 },
+          Card:   { borderRadius: 12 },
+        },
+      }}
+    >
+      {children}
+    </ConfigProvider>
+  );
+}
+```
+
+::: info Ant Token 与 CSS 变量的协同规则
+`ConfigProvider.token` 中的值（如 `colorPrimary: '#1677ff'`）允许使用**语义对齐的十六进制常量**，这是 Ant Design 设计系统的正规用法，不属于"硬编码颜色"违规。
+
+**判断标准：**
+
+| 场景 | 是否允许 | 说明 |
+|------|---------|------|
+| `ConfigProvider.token` 中的主题色 | ✅ 允许 | 须与同名 CSS 变量（如 `--color-primary`）语义一致 |
+| 组件 `.tsx` / `.css` 中的内联颜色 | ❌ 禁止 | 必须使用 `var(--*)` |
+| 全局 `ThemeProvider` 以外的 `ConfigProvider` | ❌ 禁止 | 主题入口保持唯一 |
+
+**保持同步原则**：修改 `ThemeProvider.tsx` 中的 token 值时，须同步更新 `src/styles/tokens.css` 中对应的 CSS 变量值，确保两套系统语义一致。
+:::
+
+#### 组件样式优先级
+
+```
+Tailwind 工具类 > Ant Design Token（ConfigProvider）> CSS 变量 > 内联 style
+```
+
+::: warning 禁止项
+- ❌ 在组件内使用 `style={inlineColorObject}` 等内联颜色
+- ❌ 直接 `import 'antd/dist/reset.css'` 与 Tailwind 冲突
+- ❌ 在非 `ThemeProvider` 处创建额外的 `<ConfigProvider>`
+:::
+
+### 6.3 文件命名规范
+
+| 类型 | 命名风格 | 示例 |
+|------|---------|------|
+| 组件/页面 | PascalCase | `CoursesHubPage.tsx` |
+| Hooks | camelCase + `use` 前缀 | `useChat.ts` |
+| API 模块 | camelCase | `aiConfig.ts` |
+| 类型文件 | camelCase | `workspace.ts` |
+| 样式文件 | kebab-case | `chat-bubble.css` |
+
+---
+
+## 7. Mobile（Expo React Native）
+
+- 复用 `@classplatform/shared` SDK 和类型，与 Web 端共享业务逻辑层。
+- 样式使用 NativeWind（Tailwind for React Native），避免混用 `StyleSheet.create`。
+- 网络请求的 `baseURL` 通过 `EXPO_PUBLIC_API_BASE_URL` 环境变量注入，本地调试设为 `http://<本机IP>:8080/api/v1`。
+- 平台差异隔离在 `*.native.ts` / `*.web.ts` 扩展名文件中。
+
+---
+
+## 8. API 与契约规范
+
+- **对外契约唯一源**：`docs/04-reference/api/openapi.yaml`
+- `/api/v1/*` 语义变更必须**先更新 OpenAPI**，再修改代码
+- `/v1/*`（AI Service 内部）须保持与对外契约一致
+- `@classplatform/shared` 类型变更后需重新 `npm run build:shared`，所有端需更新依赖
+
+---
+
+## 9. 文档同步规范
+
+- 新增功能：至少更新一处 How-to 或 Explanation 文档
+- 接口变更：必须更新 `04-reference/api` 下对应页面
+- 运行/部署相关变更：必须更新 `03-how-to-guides` 对应页面
+- **跨模块或架构变更**：需使用 [Plan 模式](./plan-mode-workflow.md) 输出实施计划文档
+
+---
+
+## 10. 相关文档
 
 - [Plan 模式协作流程](./plan-mode-workflow.md)
 - [Plan 模式计划模板](./plan-mode-template.md)
 - [文档规范](./doc-style.md)
 - [测试指南](./testing-guide.md)
+- [API 契约锁定策略](/04-reference/versioning/api-lock-policy)

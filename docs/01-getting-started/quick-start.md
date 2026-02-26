@@ -1,289 +1,354 @@
 # 快速开始
 
-本指南将帮助您在几分钟内快速部署和运行通用教学平台。
+本指南涵盖所有端的本地开发启动方式，以及 Docker 一键部署全栈的完整步骤。
 
 ## 系统要求
 
-### 最低配置
-- **CPU**: 2 核心
-- **内存**: 4GB RAM
-- **磁盘**: 20GB 可用空间
-- **操作系统**: Linux (Ubuntu 18.04+) / macOS / Windows 10+
-
-### 推荐配置
-- **CPU**: 4 核心
-- **内存**: 8GB RAM
-- **磁盘**: 50GB 可用空间（SSD 推荐）
-- **网络**: 稳定的互联网连接
-
 ### 软件依赖
-- **Docker**: 20.10+
-- **Docker Compose**: 2.0+
-- **Git**: 2.0+
 
-## 一键部署
+| 工具 | 最低版本 | 说明 |
+|------|----------|------|
+| **Docker** | 20.10+ | 全栈容器化部署必需 |
+| **Docker Compose** | 2.0+ | 多服务编排 |
+| **Go** | 1.24+ | 仅后端本地开发需要 |
+| **Node.js** | 18+ | 前端 / 文档站开发 |
+| **Python** | 3.9+ | AI 服务 / 仿真服务开发 |
+| **Git** | 2.0+ | 源码管理 |
 
-### 1. 安装 Docker
+### 推荐配置（本地开发）
 
-#### Ubuntu/Debian
+- CPU：4 核心；内存：8 GB；磁盘：50 GB SSD
+- 如需运行本地 LLM 推理，额外需要：NVIDIA GPU ≥ 8 GB 显存，或 Ascend NPU
+
+---
+
+## 方式一：Docker 全栈一键部署（推荐）
+
+### 1. 克隆仓库
+
 ```bash
-# 更新包索引
-sudo apt update
-
-# 安装 Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# 安装 Docker Compose
-sudo apt install docker-compose-plugin
-
-# 将用户添加到 docker 组
-sudo usermod -aG docker $USER
-newgrp docker
+git clone https://github.com/JadeSnow7/graduationDesign.git
+cd graduationDesign
 ```
 
-#### macOS
-```bash
-# 使用 Homebrew 安装
-brew install --cask docker
-
-# 或者下载 Docker Desktop
-# https://www.docker.com/products/docker-desktop
-```
-
-#### Windows
-下载并安装 Docker Desktop：
-https://www.docker.com/products/docker-desktop
-
-### 2. 克隆项目
+### 2. 配置环境变量
 
 ```bash
-git clone <repository-url>
-cd education-project
-```
-
-### 3. 配置环境变量
-
-```bash
-# 复制环境变量模板
 cp code/.env.example code/.env
-
-# 编辑环境变量文件
-nano code/.env
 ```
 
-**必需配置项**：
+打开 `code/.env`，填写以下必填项：
+
 ```bash
-# 数据库配置
-MYSQL_ROOT_PASSWORD=your_secure_password
-MYSQL_DATABASE=education_db
-MYSQL_USER=app_user
-MYSQL_PASSWORD=app_password
+# ── 数据库 ──────────────────────────────────────────────
+MYSQL_ROOT_PASSWORD=your_secure_root_password
+MYSQL_DATABASE=teaching_platform
+MYSQL_USER=teaching_platform
+MYSQL_PASSWORD=teaching_platform_pass
 
-# JWT 密钥（请生成一个安全的随机字符串）
-JWT_SECRET=your_jwt_secret_key_here
+# ── 后端 ────────────────────────────────────────────────
+BACKEND_JWT_SECRET=your_jwt_secret_min_32_chars
+BACKEND_CORS_ORIGINS=http://localhost:5173
+BACKEND_SIM_BASE_URL=http://sim:8002
 
-# AI 服务配置（可选，不配置将使用模拟响应）
-# 注意：本项目的 LLM_BASE_URL 不包含 `/v1` 后缀（AI Service 会自动拼接 `/v1/chat/completions`）
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode
-LLM_API_KEY=your_api_key
-LLM_MODEL=qwen-plus
+# ── AI 服务（使用云端 API 时填写）──────────────────────
+# 推荐：使用分层变量（与 .env.example 一致）
+LLM_BASE_URL_CLOUD=https://dashscope.aliyuncs.com/compatible-mode
+LLM_API_KEY_CLOUD=sk-xxxxxxxxxxxxxxxx
+LLM_MODEL_CLOUD=qwen-plus
+LLM_ROUTING_POLICY=cloud_only      # 无本地模型时使用 cloud_only
+# LLM_BASE_URL=                    # 兼容旧版单变量（可选，与 LLM_BASE_URL_CLOUD 二选一）
+
+# ── AI 网关共享令牌（后端→AI Service 内部鉴权）──────────
+AI_GATEWAY_SHARED_TOKEN=your_internal_token
 ```
 
-**可选配置项**：
+::: details 企业微信可选配置
 ```bash
-# 企业微信配置（如需企业微信登录）
 WECOM_CORPID=your_corp_id
 WECOM_AGENTID=your_agent_id
 WECOM_SECRET=your_secret
-
-# 服务端口配置（如有端口冲突可修改）
-BACKEND_PORT=8080
-AI_SERVICE_PORT=8001
-SIM_SERVICE_PORT=8002
 ```
+:::
 
-### 4. 启动服务
+::: details 本地 LLM 推理配置（NPU / GPU）
+```bash
+LLM_ROUTING_POLICY=local_first      # 本地优先，失败后 fallback 云端
+
+# 文本模型（本地 vLLM 实例）
+LLM_BASE_URL_LOCAL_TEXT=http://your-vllm-host:8000/v1
+LLM_API_KEY_LOCAL_TEXT=token-local
+LLM_MODEL_LOCAL_TEXT=qwen3
+
+# 视觉模型（可选）
+LLM_BASE_URL_LOCAL_VL=http://your-vllm-vl-host:8001/v1
+LLM_MODEL_LOCAL_VL=qwen3-vl
+AI_MULTIMODAL_ENABLED=true
+```
+:::
+
+### 3. 启动全栈服务
 
 ```bash
 cd code
 docker-compose up -d --build
 ```
 
-这个命令将：
-- 构建所有服务的 Docker 镜像
-- 启动 MySQL 数据库
-- 启动后端服务
-- 启动 AI 服务
-- 启动仿真服务
-- 在后台运行所有服务
+构建完成后将启动以下 4 个服务：MySQL、MinIO、后端 API、AI 服务（仿真服务通过后端网关代理）。
 
-### 5. 验证部署
+### 4. 验证服务健康状态
 
-#### 检查服务状态
 ```bash
-docker-compose ps
-```
+# 后端 API
+curl http://localhost:8080/health
+# 期望：{"success":true,"data":{"status":"ok"}}
 
-您应该看到类似以下的输出：
-```
-NAME                COMMAND                  SERVICE             STATUS              PORTS
-code-backend-1      "./backend"              backend             running             0.0.0.0:8080->8080/tcp
-code-ai-service-1   "uvicorn app.main:ap…"   ai-service          running             0.0.0.0:8001->8001/tcp
-code-sim-service-1  "uvicorn app.main:ap…"   sim-service         running             0.0.0.0:8002->8002/tcp
-code-mysql-1        "docker-entrypoint.s…"   mysql               running             0.0.0.0:3306->3306/tcp
-```
-
-#### 验证服务健康状态
-```bash
-# 检查后端服务
-curl http://localhost:8080/healthz
-
-# 检查 AI 服务
+# AI 服务
 curl http://localhost:8001/healthz
+# 期望：{"status":"ok"}
 
-# 检查仿真服务
-curl http://localhost:8002/healthz
+# MinIO 控制台
+open http://localhost:9001   # 账号 minioadmin / minioadmin123
 ```
 
-所有服务都应该返回类似 `{"status": "ok"}` 的响应。
-
-### 6. 访问应用
-
-#### 后端 API
-- **地址**: `http://localhost:8080`
-- **健康检查**: `http://localhost:8080/healthz`
-- **API 文档**: `http://localhost:8080/swagger/index.html` (如果启用)
-
-#### 前端开发服务器（可选）
-- **地址**: `http://localhost:5173`
+### 5. 访问 Web 前端
 
 ```bash
-cd code/frontend-react
+cd code/frontend
 npm install
 npm run dev
+# → http://localhost:5173
 ```
 
-前端将在 `http://localhost:5173` 启动。
+---
 
-## 默认账户
+## 方式二：多端本地开发（推荐开发者使用）
 
-系统首次启动时会自动创建以下演示账户：
+### 2-A  后端（Go + SQLite，无需 Docker）
 
-| 用户名 | 密码 | 角色 | 说明 |
-|--------|------|------|------|
-| admin | admin123 | 管理员 | 拥有所有权限 |
-| teacher | teacher123 | 教师 | 课程管理和教学权限 |
-| student | student123 | 学生 | 学习相关权限 |
+最快的后端启动方式，使用本地 SQLite 代替 MySQL：
 
-**⚠️ 生产环境请务必修改默认密码！**
-
-## 基本功能测试
-
-### 1. 用户登录测试
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+cd code/backend
+./run_local_sqlite.sh
 ```
 
-### 2. 获取用户信息
+该脚本已预设如下环境变量并启动 `go run ./cmd/server`：
+
 ```bash
-# 使用上一步返回的 token
-curl -H "Authorization: Bearer <your_token>" \
-  http://localhost:8080/api/v1/auth/me
+DB_DSN=sqlite:emfield.db
+CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:8081
+MINIO_ENDPOINT=localhost:9000
 ```
 
-### 3. AI 服务测试
+::: warning
+SQLite 模式仅用于本地快速验证，不支持生产部署。
+:::
+
+### 2-B  Web 前端（React 19 + Vite）
+
 ```bash
-curl -X POST http://localhost:8080/api/v1/ai/chat \
-  -H "Authorization: Bearer <your_token>" \
-  -H "Content-Type: application/json" \
+cd code/frontend
+npm install
+npm run dev       # → http://localhost:5173（Vite 热重载）
+```
+
+常用命令：
+
+```bash
+npm run build     # TypeScript 编译 + Vite 打包
+npm run lint      # ESLint 静态检查
+npm run test      # vitest 单元测试
+npm run test:e2e  # Playwright 端对端测试
+npm run storybook # Storybook 组件展示 → :6006
+```
+
+### 2-C  Mobile（Expo React Native）
+
+```bash
+cd code/mobile
+npm install
+npx expo start
+```
+
+扫描终端中的二维码即可在手机 Expo Go 应用中预览。
+
+::: tip
+Mobile 端通过环境变量 `EXPO_PUBLIC_API_BASE_URL` 指向后端，本地调试时设置为 `http://<本机IP>:8080/api/v1`。
+:::
+
+::: details Mobile 环境变量与存储配置详情
+
+#### 环境变量
+
+在 `code/mobile/` 目录创建 `.env.local` 文件（或通过 `eas.json` 注入）：
+
+```bash
+# 后端 API 地址（必填，本地调试时替换为本机 IP）
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080/api/v1
+
+# Edge Router 引擎（可选，默认 js）
+# 可选值：js | rust（rust 需配合 Rust core POC 构建）
+EXPO_PUBLIC_EDGE_ROUTER_ENGINE=js
+```
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `EXPO_PUBLIC_API_BASE_URL` | `http://localhost:8080`（DEV）| 后端 API 基础地址，**不含** `/api/v1` 后缀，代码内自动追加 |
+| `EXPO_PUBLIC_EDGE_ROUTER_ENGINE` | `js` | 路由引擎选择：`js`（纯 JS 实现）或 `rust`（Rust core，POC） |
+
+#### 会话存储行为
+
+Mobile 端使用 `@react-native-async-storage/async-storage` 持久化数据，存储键如下：
+
+| 键名 | 内容 | 裁剪策略 |
+|------|------|---------|
+| `@classPlatform:authSession` | JWT Token + 用户信息 | 无裁剪，登出时清除 |
+| `@classPlatform:messages` | 聊天历史记录 | **保留最新 50 条**（`MAX_HISTORY=50`），超出部分丢弃 |
+
+::: warning 历史消息限制
+每次调用 `saveMessages()` 时，历史记录自动裁剪为最近 `MAX_HISTORY=50` 条消息（`messages.slice(-50)`）。长对话场景下早期上下文会丢失，设计上为移动端存储容量权衡。
+:::
+
+#### 本地排障
+
+```bash
+# 验证 API 连通性（在手机浏览器或 Expo 中访问）
+curl http://<本机IP>:8080/health
+# 期望：{"success":true,"data":{"status":"ok"}}
+
+# 查看 Metro Bundler 日志
+npx expo start --clear   # 清除缓存后重启
+```
+
+常见问题：
+- **CORS 错误**：确认后端 `BACKEND_CORS_ORIGINS` 中包含手机的实际访问地址
+- **无法连接**：移动端与电脑需在同一 Wi-Fi 网络，不能使用 `localhost`
+
+:::
+
+
+### 2-D  Desktop（Tauri）
+
+::: warning POC 阶段
+`desktop-tauri` 当前为 **POC shell**，仅暴露 `router_decide` 命令，尚无完整桌面应用脚手架（无 `package.json`）。以下命令为当前可执行的 POC 入口。
+:::
+
+```bash
+cd code/desktop-tauri/src-tauri
+cargo run --features tauri-command  # 需要本机已安装 Rust 工具链
+```
+
+### 2-E  AI 服务（Python FastAPI）
+
+```bash
+cd code/ai_service
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8001
+```
+
+### 2-F  仿真服务（Python FastAPI）
+
+```bash
+cd code/simulation
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8002
+```
+
+---
+
+## 默认账号
+
+系统启动时自动通过种子数据创建以下账号：
+
+| 角色 | 用户名 | 密码 | 可访问功能 |
+|------|--------|------|-----------|
+| 管理员 | `admin` | `admin123` | 全部权限 |
+| 教师 | `teacher` | `teacher123` | 课程管理、AI/仿真 |
+| 学生 | `student` | `student123` | 课程查看、AI/仿真 |
+
+::: danger 生产环境必读
+请在部署前修改所有默认密码及 `BACKEND_JWT_SECRET`，并确保 `code/.env` 不被纳入版本控制。
+:::
+
+---
+
+## 快速功能验证
+
+### 登录并获取 Token
+
+```bash
+TOKEN=$(curl -sS -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"student","password":"student123"}' \
+  | jq -r '.data.access_token')
+
+echo "Token: $TOKEN"
+```
+
+### 验证 AI 对话
+
+```bash
+curl -sS -X POST http://localhost:8080/api/v1/ai/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
   -d '{
     "mode": "tutor",
-    "messages": [{"role": "user", "content": "什么是电场？"}]
-  }'
+    "messages": [{"role": "user", "content": "什么是 thesis statement？"}],
+    "stream": false
+  }' | jq '.data.reply'
 ```
 
-### 4. 仿真服务测试
+### 验证仿真服务
+
 ```bash
-curl -X POST http://localhost:8080/api/v1/sim/laplace2d \
-  -H "Authorization: Bearer <your_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nx": 20,
-    "ny": 20,
-    "v_top": 1,
-    "v_bottom": 0,
-    "v_left": 0,
-    "v_right": 0
-  }'
+curl -sS -X POST http://localhost:8080/api/v1/sim/laplace2d \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"nx": 20, "ny": 20, "v_top": 1, "v_bottom": 0, "v_left": 0, "v_right": 0}' \
+  | jq '.data.metadata'
 ```
+
+---
+
+## 文档站开发
+
+```bash
+# 从仓库根目录（非 code/ 子目录）运行
+npm install
+npm run docs:dev     # → http://localhost:5173（VitePress 热重载）
+npm run docs:build   # 构建静态站点到 docs/.vitepress/dist/
+```
+
+---
 
 ## 常见问题
 
-### 端口冲突
-如果遇到端口冲突，修改 `.env` 文件中的端口配置：
+::: details 端口冲突
+在 `code/.env` 中修改对应端口后重新执行 `docker-compose up -d`。
+:::
+
+::: details 数据库启动失败
 ```bash
-BACKEND_PORT=8081
-AI_SERVICE_PORT=8003
-SIM_SERVICE_PORT=8004
-MYSQL_PORT=3307
+docker-compose logs mysql   # 查看详细错误
+docker-compose down -v      # 清除数据卷后重试（会丢失数据）
+docker-compose up -d
 ```
+:::
 
-### 服务启动失败
-查看服务日志：
-```bash
-# 查看所有服务日志
-docker-compose logs
+::: details AI 返回 503 / 超时
+1. 检查 `LLM_ROUTING_POLICY`：无本地模型时应设为 `cloud_only`
+2. 检查 `LLM_API_KEY` 是否有效
+3. 查看 AI 服务日志：`docker-compose logs ai`
+:::
 
-# 查看特定服务日志
-docker-compose logs backend
-docker-compose logs ai-service
-docker-compose logs sim-service
-```
+::: details 前端请求 CORS 错误
+确认 `BACKEND_CORS_ORIGINS` 包含前端地址，例如 `http://localhost:5173`。
+:::
 
-### 数据库连接失败
-1. 确保 MySQL 服务正常运行：
-   ```bash
-   docker-compose logs mysql
-   ```
-
-2. 检查数据库配置是否正确
-
-3. 等待数据库完全启动（首次启动可能需要几分钟）
-
-### AI 服务响应异常
-如果没有配置真实的 LLM API，AI 服务会返回模拟响应，这是正常的。要启用真实的 AI 功能，请配置 `LLM_BASE_URL`、`LLM_API_KEY` 和 `LLM_MODEL`。
-
-## 停止服务
-
-```bash
-# 停止所有服务
-docker-compose down
-
-# 停止服务并删除数据卷（谨慎使用）
-docker-compose down -v
-```
-
-## 更新服务
-
-```bash
-# 拉取最新代码
-git pull
-
-# 重新构建并启动服务
 ## 下一步
 
-- 已完成 [环境搭建](../03-how-to-guides/deployment/environment-setup.md)
-- 熟悉 [API 文档](../04-reference/api/)
-
-## 2. 部署
-
-参考 [生产环境部署](../03-how-to-guides/deployment/production-deployment.md) 或 [监控配置](../03-how-to-guides/deployment/monitoring.md)。
-
-## 3. 故障排查
-
-遇到问题请查看 [故障排查指南](../03-how-to-guides/deployment/troubleshooting.md)。
-2. 检查项目 Issues
-3. 联系技术支持团队
+- 📖 [API 参考](/04-reference/api/) — 了解所有后端接口
+- 🏗️ [系统设计](/05-explanation/system-design) — 理解端云协同架构
+- 🤖 [模型路由策略](/05-explanation/ai/model-routing-policy) — 本地/云端路由规则
+- 🔬 [工作台接口](/04-reference/api/workspace) — 仿真异步任务 API
