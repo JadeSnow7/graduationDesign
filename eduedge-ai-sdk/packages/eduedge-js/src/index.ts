@@ -102,6 +102,8 @@ export class EduEdgeAI {
     onToken: (token: string) => void
   ): Promise<void> {
     const streamId = createStreamId();
+    const tokenEvent = `llm-token:${streamId}`;
+    const finishEvent = `llm-finish:${streamId}`;
     let unlistenToken: UnlistenFn | null = null;
     let unlistenFinish: UnlistenFn | null = null;
     let settled = false;
@@ -137,9 +139,12 @@ export class EduEdgeAI {
       };
 
       try {
-        unlistenToken = await listen<LlmTokenPayload>("llm-token", (event) => {
+        unlistenToken = await listen<LlmTokenPayload>(tokenEvent, (event) => {
           const payload = event.payload;
-          if (!payload || payload.streamId !== streamId) {
+          if (!payload) {
+            return;
+          }
+          if (payload.streamId !== streamId) {
             return;
           }
           try {
@@ -149,16 +154,16 @@ export class EduEdgeAI {
           }
         });
 
-        unlistenFinish = await listen<LlmFinishPayload>(
-          "llm-finish",
-          (event) => {
-            const payload = event.payload;
-            if (!payload || payload.streamId !== streamId) {
-              return;
-            }
-            resolveOnce();
+        unlistenFinish = await listen<LlmFinishPayload>(finishEvent, (event) => {
+          const payload = event.payload;
+          if (!payload) {
+            return;
           }
-        );
+          if (payload.streamId !== streamId) {
+            return;
+          }
+          resolveOnce();
+        });
 
         await invoke<void>(STREAM_CHAT_COMMAND, { prompt, streamId });
       } catch (error) {

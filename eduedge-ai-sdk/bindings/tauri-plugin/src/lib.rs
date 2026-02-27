@@ -13,6 +13,8 @@ const LOCK_POISONED_ERROR: &str = "app state lock poisoned";
 const MODEL_NOT_INITIALIZED_ERROR: &str = "model not initialized";
 const EMPTY_MODEL_PATH_ERROR: &str = "model path cannot be empty";
 const EMPTY_STREAM_ID_ERROR: &str = "stream id cannot be empty";
+const INVALID_STREAM_ID_ERROR: &str =
+    "stream id contains invalid characters; only [A-Za-z0-9_:/-] are allowed";
 
 #[derive(Default)]
 pub struct AppState {
@@ -71,6 +73,12 @@ fn normalize_stream_id(stream_id: &str) -> Result<String, String> {
     let normalized = stream_id.trim();
     if normalized.is_empty() {
         return Err(EMPTY_STREAM_ID_ERROR.to_string());
+    }
+    if !normalized
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | ':' | '/' | '-'))
+    {
+        return Err(INVALID_STREAM_ID_ERROR.to_string());
     }
     Ok(normalized.to_string())
 }
@@ -200,18 +208,20 @@ async fn stream_chat<R: Runtime>(
     let stream_id = normalize_stream_id(&stream_id)?;
     let engine = engine_for_stream(state.inner())?;
     let mut receiver: tokio::sync::mpsc::Receiver<String> = engine.stream_chat(prompt).await;
+    let token_event_name = format!("llm-token:{stream_id}");
+    let finish_event_name = format!("llm-finish:{stream_id}");
 
     tauri::async_runtime::spawn(async move {
         while let Some(token) = receiver.recv().await {
             let _ = app.emit(
-                "llm-token",
+                &token_event_name,
                 LlmTokenEvent {
                     stream_id: stream_id.clone(),
                     token,
                 },
             );
         }
-        let _ = app.emit("llm-finish", LlmFinishEvent { stream_id });
+        let _ = app.emit(&finish_event_name, LlmFinishEvent { stream_id });
     });
 
     Ok(())
@@ -307,5 +317,22 @@ mod tests {
 
         assert_eq!(token_event.stream_id, stream_id);
         assert_eq!(finish_event.stream_id, "stream-001".to_string());
+    }
+
+    #[test]
+    fn stream_id_rejects_invalid_characters() {
+        assert!(normalize_stream_id("ok_stream-01:/x").is_ok());
+        assert!(normalize_stream_id("bad stream").is_err());
+        assert!(normalize_stream_id("bad*stream").is_err());
+    }
+
+    #[test]
+    fn stream_event_names_include_stream_id() {
+        let stream_id = "stream-001";
+        let token_event_name = format!("llm-token:{stream_id}");
+        let finish_event_name = format!("llm-finish:{stream_id}");
+
+        assert_eq!(token_event_name, "llm-token:stream-001");
+        assert_eq!(finish_event_name, "llm-finish:stream-001");
     }
 }
