@@ -4,3 +4,6 @@
 [submodule "hust-undergrad-thesis"]
 	path = hust-undergrad-thesis
 	url = https://github.com/JadeSnow7/hust-undergraduate-thesis.git
+[submodule "eduedge-ai-sdk"]
+	path = eduedge-ai-sdk
+	url = https://github.com/JadeSnow7/edge-ai-sdk.git
