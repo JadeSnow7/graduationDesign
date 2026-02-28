@@ -101,7 +101,7 @@
 ```
 education-project/
 ├── code/                    # 代码库
-│   ├── frontend-react/     # Web 前端（React + Vite）
+│   ├── frontend/           # Web 前端（默认）
 │   ├── backend/            # Go 后端
 │   ├── ai_service/         # Python AI 服务
 │   ├── simulation/         # Python 仿真服务

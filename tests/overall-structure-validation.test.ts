@@ -174,7 +174,7 @@ describe('Overall Structure Validation', () => {
       fc.property(fc.constant(PROJECT_ROOT), (projectRoot) => {
         // Test path handling across platforms
         const testPaths = [
-          'code/frontend-react/src',
+          'code/frontend/src',
           'code/backend/cmd/server',
           'academic/thesis/src',
           'docs/architecture',
@@ -285,7 +285,7 @@ describe('Overall Structure Validation', () => {
         const requiredStructure = [
           // Code structure (Requirement 1)
           'code',
-          'code/frontend-react',
+          'code/frontend',
           'code/backend',
           'code/ai_service',
           'code/simulation',

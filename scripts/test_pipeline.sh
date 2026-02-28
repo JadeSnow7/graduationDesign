@@ -209,7 +209,7 @@ step1_scope() {
             code/backend/*) backend_changes=$((backend_changes + 1)) ;;
             code/ai_service/*) ai_changes=$((ai_changes + 1)) ;;
             code/simulation/*) sim_changes=$((sim_changes + 1)) ;;
-            code/frontend*) frontend_changes=$((frontend_changes + 1)) ;;
+            code/frontend/*) frontend_changes=$((frontend_changes + 1)) ;;
             docs/*) docs_changes=$((docs_changes + 1)) ;;
         esac
     done <<< "$changed_files"
@@ -353,15 +353,15 @@ step3_unit_tests() {
     log_step "3.4 Frontend 构建校验"
     
     # Web Frontend (React)
-    if [[ -d "$CODE_DIR/frontend-react" ]]; then
-        cd "$CODE_DIR/frontend-react" || exit 1
+    if [[ -d "$CODE_DIR/frontend" ]]; then
+        cd "$CODE_DIR/frontend" || exit 1
         if [[ ! -d "node_modules" ]]; then
             npm install --silent 2>/dev/null
         fi
         if npm run build 2>&1 | tail -5; then
-            log_pass "React Frontend 构建成功"
+            log_pass "Frontend 构建成功"
         else
-            log_fail "React Frontend 构建失败"
+            log_fail "Frontend 构建失败"
             frontend_ok=false
         fi
         cd "$PROJECT_ROOT" || exit 1

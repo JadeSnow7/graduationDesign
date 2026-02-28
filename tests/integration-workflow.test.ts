@@ -114,7 +114,7 @@ describe('Integration Workflow Tests', () => {
         // Step 3: Simulate reorganization process
         const targetStructure = [
           'code',
-          'code/frontend-react',
+          'code/frontend',
           'code/backend',
           'code/ai_service',
           'code/simulation',
@@ -148,7 +148,7 @@ describe('Integration Workflow Tests', () => {
         // Move frontend files
         if (existsSync(join(workspace, 'frontend'))) {
           const frontendSrc = join(workspace, 'frontend')
-          const frontendDest = join(workspace, 'code', 'frontend-react')
+          const frontendDest = join(workspace, 'code', 'frontend')
           
           // Copy directory contents recursively
           function copyDir(src: string, dest: string) {
@@ -264,7 +264,7 @@ describe('Integration Workflow Tests', () => {
           () => verifyDirectoryStructure(workspace, targetStructure),
           
           // File migration verification
-          () => existsSync(join(workspace, 'code', 'frontend-react', 'src', 'App.tsx')),
+          () => existsSync(join(workspace, 'code', 'frontend', 'src', 'App.tsx')),
           () => existsSync(join(workspace, 'code', 'backend', 'cmd', 'server', 'main.go')),
           () => existsSync(join(workspace, 'academic', 'thesis', 'src', 'main.tex')),
           () => existsSync(join(workspace, 'docs', 'api', 'api.md')),
@@ -566,7 +566,7 @@ describe('Integration Workflow Tests', () => {
           'docs/api',
           'docs/deployment',
           'code',
-          'code/frontend-react',
+          'code/frontend',
           'code/backend',
           'academic',
           'academic/thesis'
@@ -600,7 +600,7 @@ describe('Integration Workflow Tests', () => {
             path: 'code/README.md',
             content: `# Code Base
 
-[Frontend](./frontend-react/)
+[Frontend](./frontend/)
 [Backend](./backend/)
 `
           },
@@ -622,7 +622,7 @@ describe('Integration Workflow Tests', () => {
           'docs/architecture/README.md',
           'docs/api/README.md',
           'docs/deployment/README.md',
-          'code/frontend-react/README.md',
+          'code/frontend/README.md',
           'code/backend/README.md',
           'academic/thesis/README.md'
         ]

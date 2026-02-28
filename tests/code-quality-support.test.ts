@@ -71,7 +71,7 @@ describe('Code Quality Support System Property Tests', () => {
           }
 
           // Check for consistent directory structure following naming conventions
-          const expectedCodeDirs = ['frontend-react', 'backend', 'ai_service', 'simulation', 'shared', 'deployment', 'scripts']
+          const expectedCodeDirs = ['frontend', 'backend', 'ai_service', 'simulation', 'shared', 'deployment', 'scripts']
           expectedCodeDirs.forEach(dir => {
             const dirPath = join('code', dir)
             expect(directoryExists(dirPath)).toBe(true)
@@ -145,7 +145,7 @@ describe('Code Quality Support System Property Tests', () => {
         fc.constant(null),
         () => {
           // Check that code subdirectories follow snake_case or kebab-case
-          const codeSubdirs = ['frontend-react', 'backend', 'ai_service', 'simulation', 'shared', 'deployment', 'scripts']
+          const codeSubdirs = ['frontend', 'backend', 'ai_service', 'simulation', 'shared', 'deployment', 'scripts']
           
           codeSubdirs.forEach(subdir => {
             // Should not contain uppercase letters or spaces

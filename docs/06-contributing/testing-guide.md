@@ -32,7 +32,7 @@ graph TB
 | **Go Backend** | `code/backend/internal/` | go test | `cd code/backend && go test ./...` |
 | **AI Service** | `code/ai_service/tests/` | pytest | `cd code/ai_service && pytest` |
 | **Simulation** | `code/simulation/` | pytest (待建) | `cd code/simulation && pytest` |
-| **Frontend React** | `code/frontend-react/` | - | `cd code/frontend-react && npm run build` |
+| **Frontend (Default)** | `code/frontend/` | - | `cd code/frontend && npm run build` |
 | **E2E** | `scripts/` | bash/curl | `./scripts/e2e_guided_learning.sh` |
 | **全流程** | `scripts/` | bash | `./scripts/test_pipeline.sh` |
 
@@ -74,7 +74,7 @@ git diff --name-only main...HEAD | head -20
 | `code/backend` | ✅ | ✅ | ✅ | ✅ |
 | `code/ai_service` | ✅ | ✅ | ✅ | ✅ |
 | `code/simulation` | ✅ | - | - | ✅ |
-| `code/frontend-react` | 构建 | - | ✅ | - |
+| `code/frontend` | 构建 | - | ✅ | - |
 | `docs/` | - | - | - | - |
 
 ---
@@ -147,7 +147,7 @@ pytest -v --cov=app --cov-report=term-missing
 #### 3.4 Frontend 构建校验
 
 ```bash
-cd code/frontend-react
+cd code/frontend
 npm run build
 ```
 
@@ -405,8 +405,8 @@ graduationDesign/
     ├── simulation/
     │   └── tests/                  # (待建)
     │
-    └── frontend-react/
-        └── src/__tests__/          # (待建)
+    ├── frontend/
+    │   └── src/__tests__/          # (待建)
 ```
 
 ---

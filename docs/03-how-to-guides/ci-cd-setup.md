@@ -45,7 +45,7 @@ This will automatically:
 ### Local Setup
 
 ```bash
-cd code/frontend-react
+cd code/frontend
 npx playwright install chromium
 npm run test:e2e
 ```

@@ -13,7 +13,7 @@ const PROJECT_ROOT = join(process.cwd(), '..')
 
 describe('Code File Migration Verification', () => {
   test('Frontend code migration - essential files exist', () => {
-    const frontendPath = join(PROJECT_ROOT, 'code', 'frontend-react')
+    const frontendPath = join(PROJECT_ROOT, 'code', 'frontend')
     
     // Verify directory exists
     expect(existsSync(frontendPath)).toBe(true)
@@ -192,7 +192,7 @@ describe('Code File Migration Verification', () => {
 
   test('Directory structure creation accuracy - all required subdirectories exist', () => {
     const codeSubdirectories = [
-      'frontend-react', 'backend', 'ai_service', 'simulation', 
+      'frontend', 'backend', 'ai_service', 'simulation',
       'shared', 'deployment', 'scripts'
     ]
     
@@ -210,7 +210,7 @@ describe('Code File Migration Verification', () => {
 
   test('Migration completeness - no empty critical directories', () => {
     const criticalDirectories = [
-      join(PROJECT_ROOT, 'code', 'frontend-react'),
+      join(PROJECT_ROOT, 'code', 'frontend'),
       join(PROJECT_ROOT, 'code', 'backend'),
       join(PROJECT_ROOT, 'code', 'ai_service'),
       join(PROJECT_ROOT, 'code', 'simulation')

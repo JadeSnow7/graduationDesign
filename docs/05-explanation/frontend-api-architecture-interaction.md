@@ -7,8 +7,8 @@
 - 需求与功能：`docs/05-explanation/requirements.md`
 - API 规范：`docs/04-reference/api/index.md`、`docs/04-reference/api/auth.md`、`docs/04-reference/api/course.md`、`docs/04-reference/api/ai.md`、`docs/04-reference/api/simulation.md`、`docs/04-reference/api/openapi.yaml`
 - 架构设计：`docs/05-explanation/system-design.md`、`docs/05-explanation/architecture/component-design.md`、`docs/05-explanation/architecture/project-design-document.md`、`docs/05-explanation/architecture/react-layered-architecture.md`
-- 前端实现参考：`code/frontend-react/`（React + Vite），路由与页面见 `code/frontend-react/src/App.tsx` 与 `code/frontend-react/src/pages/`
-- 前端技术栈说明：`docs/01-getting-started/quick-start.md`、`code/frontend-react/package.json`
+- 前端实现参考：`code/frontend/`（React + Vite），路由与页面见 `code/frontend/src/app/router.tsx` 与 `code/frontend/src/pages/`
+- 前端技术栈说明：`docs/01-getting-started/quick-start.md`、`code/frontend/package.json`
 
 ## 2. 前端任务需求（需求层）
 
@@ -130,4 +130,4 @@
 
 - 文档入口已统一到 `docs/04-reference/api/`；新增或调整接口时应同步更新对应页面与 OpenAPI。
 - 前端已调用 `/calc/*` 原型接口，建议后续在 `docs/04-reference/api/` 增补独立章节说明参数与错误码。
-- 架构与交互文档应持续与 `code/frontend-react/` 实现对齐，避免字段或路由漂移。
+- 架构与交互文档应持续与 `code/frontend/` 实现对齐，避免字段或路由漂移。

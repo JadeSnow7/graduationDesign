@@ -192,7 +192,7 @@ describe('README Content Completeness', () => {
     
     // Verify key subdirectories are shown
     const keySubdirectories = [
-      'frontend-react/',
+      'frontend/',
       'backend/', 
       'ai_service/',
       'simulation/',
