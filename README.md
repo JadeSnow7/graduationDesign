@@ -70,7 +70,7 @@ project-root/
 ├── 📄 .gitignore                   # Git忽略规则
 │
 ├── 💻 code/                        # 代码库
-│   ├── 🌐 frontend-react/          # Web 前端 (React + Vite)
+│   ├── 🌐 frontend/                # Web 前端 (默认)
 │   ├── ⚙️ backend/                # 后端代码 (Go)
 │   ├── 🤖 ai_service/             # AI服务 (Python)
 │   ├── 🔬 simulation/             # 仿真服务 (Python)
@@ -140,7 +140,7 @@ go run cmd/server/main.go
 
 #### 前端开发
 ```bash
-cd code/frontend-react
+cd code/frontend
 npm install
 npm run dev
 ```
