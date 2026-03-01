@@ -7,3 +7,9 @@
 [submodule "eduedge-ai-sdk"]
 	path = eduedge-ai-sdk
 	url = https://github.com/JadeSnow7/edge-ai-sdk.git
+[submodule "multi-agent"]
+	path = multi-agent
+	url = https://github.com/JadeSnow7/Multi-Agent.git
+[submodule "graphrag-x"]
+	path = graphrag-x
+	url = https://github.com/JadeSnow7/GraphRAG-X.git
