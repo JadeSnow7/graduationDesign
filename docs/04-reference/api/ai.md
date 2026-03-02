@@ -562,6 +562,24 @@ interface StreamOptions {
 | `onFinish` | 流正常结束 | `onError` 不会同时触发 |
 | `onError` | 网络异常 / 服务报错 | `AbortSignal` 中断**不触发**，直接静默退出 |
 
+::: warning 中断行为
+调用 `controller.abort()` 后，流会立即停止，但**不会触发 `onError` 回调**。这是设计行为，避免将用户主动中断误判为错误。如需在中断时执行清理逻辑，请在调用 `abort()` 的代码中直接处理。
+
+**实现细节（参考 `code/frontend/src/lib/ai-stream.ts`）：**
+
+```typescript
+try {
+  for await (const token of api.ai.streamChat(..., signal)) {
+    options.onMessage(token);
+  }
+  options.onFinish();
+} catch (error) {
+  if (options.signal?.aborted) return;  // 静默退出，不触发 onError
+  options.onError(error instanceof Error ? error : new Error('Unknown error'));
+}
+```
+:::
+
 **完整用法示例：**
 
 ```typescript
@@ -588,8 +606,214 @@ controller.abort();  // onError 不触发，流静默退出
 
 ---
 
+## 本地大模型 SDK 调用契约（@jadesnow7/edge-ai-sdk）
+
+::: info 适用场景
+本节内容仅适用于**桌面端（Tauri）**。Web 端和移动端通过后端网关调用 AI 服务，使用上述 HTTP 接口。
+:::
+
+### 架构概览
+
+桌面端通过 **@jadesnow7/edge-ai-sdk** 直接调用本地 NPU/GPU 推理引擎，无需经过后端网关。SDK 采用三层架构：
+
+- **TypeScript Binding** — 前端统一入口（`EduEdgeAI` 单例类）
+- **Tauri Plugin** — Rust IPC 命令处理与事件发射
+  - 命令：`plugin:eduedge-ai|init_local_model`、`plugin:eduedge-ai|stream_chat`
+  - 事件：`llm-token:${streamId}`、`llm-finish:${streamId}`
+- **Rust Core** — 硬件探测与推理引擎适配
+
+**IPC 通信机制：**
+- TypeScript 通过 `@tauri-apps/api/core` 的 `invoke()` 调用 Rust 命令
+- Rust 通过 `emit()` 发射事件，TypeScript 通过 `listen()` 订阅
+- 所有事件名动态拼接 `streamId` 后缀，确保并发流隔离
+
+### StreamId 隔离协议
+
+为解决桌面端多会话并发时的 Token 串流问题，SDK 引入 **StreamId 隔离协议**：
+
+- 每次调用 `streamChat` 时，SDK 自动生成唯一的 `streamId`（UUID）
+- 底层事件名动态拼接为 `llm-token:${streamId}`，确保不同会话的 Token 互不干扰
+- **SDK 自动管理事件监听器的挂载与解绑**，完全杜绝内存泄漏：
+  - 在 `invoke` 前通过 `listen()` 注册事件监听器（`llm-token:${streamId}` 和 `llm-finish:${streamId}`）
+  - 在流结束（`llm-finish` 事件）或异常时，自动调用 `unlisten()` 解绑
+  - 使用 `settled` 标志位防止重复 resolve/reject
+  - 事件回调中通过 `payload.streamId !== streamId` 过滤其他流的事件
+
+**前端开发者无需手动管理 StreamId 和事件解绑**，调用接口即可。
+
+**实现细节（参考 `eduedge-ai-sdk/packages/eduedge-js/src/index.ts`）：**
+
+```typescript
+// 自动生成 streamId
+const streamId = createStreamId();
+const tokenEvent = `llm-token:${streamId}`;
+const finishEvent = `llm-finish:${streamId}`;
+
+// 自动清理函数
+const cleanup = (): void => {
+  if (unlistenToken) unlistenToken();  // 解绑 token 事件
+  if (unlistenFinish) unlistenFinish(); // 解绑 finish 事件
+};
+
+// 在 Promise 的 resolve/reject 中自动调用 cleanup
+const resolveOnce = (): void => {
+  if (settled) return;
+  settled = true;
+  cleanup();
+  resolve();
+};
+```
+
+### API 参考
+
+#### `LocalAI.init()`
+
+初始化本地推理引擎，应在应用启动时调用一次。
+
+```typescript
+import { LocalAI } from '@jadesnow7/edge-ai-sdk';
+
+await LocalAI.init();
+```
+
+**返回值**：`Promise<void>`
+
+**异常**：
+- `HARDWARE_NOT_SUPPORTED` — 当前设备不支持本地推理（无 NPU/GPU）
+- `ENGINE_INIT_FAILED` — 推理引擎初始化失败
+
+---
+
+#### `LocalAI.streamChat(messages, options)`
+
+流式对话接口，逐 Token 返回 AI 回复。
+
+**参数：**
+
+```typescript
+type StreamChatOptions = {
+  onMessage: (token: string) => void;   // 每收到一个 Token 触发
+  onFinish: () => void;                 // 流正常结束触发
+  onError: (error: Error) => void;      // 流异常触发（abort 不触发）
+  mode?: string;                        // 对话模式，默认 'tutor'
+  signal?: AbortSignal;                 // 中断信号，调用 abort() 后静默退出
+};
+
+await LocalAI.streamChat(
+  messages: ChatMessage[],
+  options: StreamChatOptions
+): Promise<void>;
+```
+
+**示例：**
+
+```typescript
+import { LocalAI } from '@jadesnow7/edge-ai-sdk';
+import { useState } from 'react';
+
+function ChatComponent() {
+  const [reply, setReply] = useState('');
+  const [status, setStatus] = useState<'idle' | 'streaming' | 'done'>('idle');
+  const controllerRef = useRef<AbortController>();
+
+  const handleChat = async () => {
+    controllerRef.current = new AbortController();
+    setStatus('streaming');
+    setReply('');
+
+    await LocalAI.streamChat(
+      [{ role: 'user', content: '解释电磁感应定律' }],
+      {
+        mode: 'tutor',
+        onMessage: (token) => setReply(prev => prev + token),
+        onFinish: () => setStatus('done'),
+        onError: (err) => {
+          console.error('推理失败:', err);
+          setStatus('idle');
+        },
+        signal: controllerRef.current.signal,
+      }
+    );
+  };
+
+  const handleStop = () => {
+    controllerRef.current?.abort();  // 中断推理，onError 不触发
+    setStatus('idle');
+  };
+
+  return (
+    <div>
+      <button onClick={handleChat} disabled={status === 'streaming'}>
+        开始对话
+      </button>
+      <button onClick={handleStop} disabled={status !== 'streaming'}>
+        停止
+      </button>
+      <pre>{reply}</pre>
+    </div>
+  );
+}
+```
+
+**回调行为语义：**
+
+| 回调 | 触发条件 | 注意事项 |
+|------|---------|---------|
+| `onMessage` | 每个流式 Token | 累积拼接即为完整回复 |
+| `onFinish` | 流正常结束 | `onError` 不会同时触发 |
+| `onError` | 网络异常 / 推理失败 | `AbortSignal` 中断**不触发**，直接静默退出 |
+
+---
+
+#### `LocalAI.getHardwareInfo()`
+
+获取当前设备的硬件信息（NPU/GPU 型号、可用显存等）。
+
+```typescript
+const info = await LocalAI.getHardwareInfo();
+console.log(info);
+// {
+//   hasNPU: true,
+//   npuModel: 'Ascend 310P',
+//   hasGPU: true,
+//   gpuModel: 'NVIDIA RTX 4060',
+//   availableVRAM: 8192,  // MB
+// }
+```
+
+**返回值**：`Promise<HardwareInfo>`
+
+---
+
+### 错误处理
+
+SDK 内部错误通过 `onError` 回调传递，常见错误码：
+
+| 错误码 | 说明 | 处理建议 |
+|--------|------|---------|
+| `HARDWARE_NOT_SUPPORTED` | 设备不支持本地推理 | 提示用户切换至云端模式 |
+| `ENGINE_INIT_FAILED` | 推理引擎初始化失败 | 检查模型文件是否完整 |
+| `INFERENCE_TIMEOUT` | 推理超时（默认 30s） | 重试或切换至云端 |
+| `OUT_OF_MEMORY` | 显存不足 | 降低 batch size 或切换至云端 |
+
+---
+
+### 与服务端 SSE 接口的对比
+
+| 特性 | 服务端 SSE (`/api/v1/ai/chat`) | 本地 SDK (`@jadesnow7/edge-ai-sdk`) |
+|------|-------------------------------|---------------------------|
+| **适用端** | Web / Mobile | Desktop (Tauri) |
+| **数据隐私** | 需经过后端网关 | 完全本地，不出设备 |
+| **延迟** | 取决于网络 + 服务端负载 | 仅本地推理延迟（≤300ms p95） |
+| **并发隔离** | HTTP 请求天然隔离 | StreamId 协议隔离 |
+| **中断机制** | `AbortController` | `AbortController` |
+| **事件管理** | 手动 `EventSource.close()` | SDK 自动 `unlisten` |
+
+---
+
 ## 相关文档
 
+- [@jadesnow7/edge-ai-sdk 架构与 StreamId 协议](/05-explanation/architecture/local-ai-runtime) — SDK 分层设计与并发流隔离机制
 - [模型路由策略](/05-explanation/ai/model-routing-policy) — `local_first` 路由规则与 fallback 边界
 - [引导式学习机制](/05-explanation/ai/guided-learning) — 会话状态机与薄弱点检测
 - [GraphRAG 说明](/05-explanation/ai/graph-rag) — 知识库检索增强

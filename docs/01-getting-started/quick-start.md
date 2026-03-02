@@ -39,25 +39,40 @@ cp code/.env.example code/.env
 
 打开 `code/.env`，填写以下必填项：
 
+### 阻断级关键变量（与 `code/.env.example` 同步）
+
+| 变量 | 用途 | 说明 |
+|------|------|------|
+| `MYSQL_DATABASE` / `DB_DSN` | 数据库连接 | **开发环境**可用 SQLite：`DB_DSN=sqlite:emfield.db`；**生产/容器环境**使用 MySQL（`MYSQL_DATABASE` + `BACKEND_DB_DSN`）。 |
+| `EDGE_ROUTER_ENGINE` | 端云协同路由引擎 | AI 服务路由引擎选择（推荐 `js`，`rust` 为 POC 路径）。 |
+| `BACKEND_SIM_BASE_URL` | 仿真微服务转发 | 后端网关转发 `/api/v1/sim/*` 时依赖该地址；未配置会导致 Python 仿真服务不可达。 |
+| `LLM_BASE_URL` / `LLM_API_KEY` | 大模型基础上游变量 | 兼容旧版单变量。推荐优先使用 `LLM_BASE_URL_CLOUD` / `LLM_API_KEY_CLOUD`（或 local/cloud 分层变量）。 |
+
 ```bash
 # ── 数据库 ──────────────────────────────────────────────
 MYSQL_ROOT_PASSWORD=your_secure_root_password
 MYSQL_DATABASE=teaching_platform
 MYSQL_USER=teaching_platform
 MYSQL_PASSWORD=teaching_platform_pass
+# 容器化后端会将 BACKEND_DB_DSN 映射为运行时 DB_DSN
+BACKEND_DB_DSN=teaching_platform:teaching_platform_pass@tcp(mysql:3306)/teaching_platform?charset=utf8mb4&parseTime=True&loc=Local
 
 # ── 后端 ────────────────────────────────────────────────
 BACKEND_JWT_SECRET=your_jwt_secret_min_32_chars
 BACKEND_CORS_ORIGINS=http://localhost:5173
-BACKEND_SIM_BASE_URL=http://sim:8002
+BACKEND_SIM_BASE_URL=http://sim:8002   # 必填：后端网关转发到 Python 仿真服务
+ALLOW_DEMO_SEED=true              # 需要默认账号时启用
 
-# ── AI 服务（使用云端 API 时填写）──────────────────────
+# ── AI 服务（端云协同路由）──────────────────────────────
+EDGE_ROUTER_ENGINE=js             # 端云协同路由引擎：js | rust(POC)
 # 推荐：使用分层变量（与 .env.example 一致）
 LLM_BASE_URL_CLOUD=https://dashscope.aliyuncs.com/compatible-mode
 LLM_API_KEY_CLOUD=sk-xxxxxxxxxxxxxxxx
 LLM_MODEL_CLOUD=qwen-plus
 LLM_ROUTING_POLICY=cloud_only      # 无本地模型时使用 cloud_only
-# LLM_BASE_URL=                    # 兼容旧版单变量（可选，与 LLM_BASE_URL_CLOUD 二选一）
+# 兼容旧版单变量（可选）
+LLM_BASE_URL=
+LLM_API_KEY=
 
 # ── AI 网关共享令牌（后端→AI Service 内部鉴权）──────────
 AI_GATEWAY_SHARED_TOKEN=your_internal_token
@@ -142,7 +157,7 @@ MINIO_ENDPOINT=localhost:9000
 ```
 
 ::: warning
-SQLite 模式仅用于本地快速验证，不支持生产部署。
+SQLite 模式仅用于本地快速验证，不支持生产部署。生产/容器部署请改用 MySQL（`MYSQL_DATABASE` + `BACKEND_DB_DSN`）。
 :::
 
 ### 2-B  Web 前端（React 19 + Vite）
@@ -236,7 +251,7 @@ npx expo start --clear   # 清除缓存后重启
 
 ```bash
 cd code/desktop-tauri/src-tauri
-cargo run --features tauri-command  # 需要本机已安装 Rust 工具链
+cargo run --features tauri-command
 ```
 
 ### 2-E  AI 服务（Python FastAPI）
@@ -259,7 +274,7 @@ uvicorn app.main:app --reload --port 8002
 
 ## 默认账号
 
-系统启动时自动通过种子数据创建以下账号：
+仅当 `ALLOW_DEMO_SEED=true` 时，系统会创建以下默认账号：
 
 | 角色 | 用户名 | 密码 | 可访问功能 |
 |------|--------|------|-----------|
@@ -324,6 +339,71 @@ npm run docs:build   # 构建静态站点到 docs/.vitepress/dist/
 
 ## 常见问题
 
+::: details 无法登录 / 种子账号丢失
+**症状：**
+- 使用默认账号（admin/admin123）登录时提示"用户名或密码错误"
+- 数据库重置后无法访问系统
+
+**原因：**
+- `ALLOW_DEMO_SEED=false` 时，后端不会自动创建种子账号
+- 数据库重置（`docker-compose down -v`）会清空所有用户数据
+
+**解决方案：**
+
+1. **启用种子账号（推荐）：**
+   ```bash
+   # 编辑 code/.env
+   ALLOW_DEMO_SEED=true
+
+   # 重启后端
+   docker-compose restart backend
+   ```
+
+2. **验证种子账号已创建：**
+   ```bash
+   # 查看后端启动日志
+   docker-compose logs backend | grep "seed"
+   # 应看到 "Demo seed users created" 或类似消息
+   ```
+
+**默认账号列表：**
+
+| 角色 | 用户名 | 密码 |
+|------|--------|------|
+| 管理员 | admin | admin123 |
+| 教师 | teacher | teacher123 |
+| 学生 | student | student123 |
+:::
+
+::: details 数据库未初始化
+**症状：**
+- 后端启动日志显示 `Error 1146: Table 'teaching_platform.users' doesn't exist`
+- API 请求返回 500 错误
+
+**原因：**
+- MySQL 容器首次启动时未正确执行 AutoMigrate
+- 数据库连接字符串配置错误
+
+**解决方案：**
+
+1. **检查数据库连接：**
+   ```bash
+   # 查看后端日志
+   docker-compose logs backend | grep "database"
+
+   # 确认 BACKEND_DB_DSN 配置正确
+   ```
+
+2. **手动触发迁移：**
+   ```bash
+   # 重启后端（会自动执行 AutoMigrate）
+   docker-compose restart backend
+
+   # 查看迁移日志
+   docker-compose logs backend | grep "AutoMigrate"
+   ```
+:::
+
 ::: details 端口冲突
 在 `code/.env` 中修改对应端口后重新执行 `docker-compose up -d`。
 :::
@@ -340,6 +420,11 @@ docker-compose up -d
 1. 检查 `LLM_ROUTING_POLICY`：无本地模型时应设为 `cloud_only`
 2. 检查 `LLM_API_KEY` 是否有效
 3. 查看 AI 服务日志：`docker-compose logs ai`
+4. 测试 AI 服务健康检查：
+   ```bash
+   curl http://localhost:8001/healthz
+   # 应返回 {"status":"ok"}
+   ```
 :::
 
 ::: details 前端请求 CORS 错误

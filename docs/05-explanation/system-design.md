@@ -98,6 +98,229 @@ graph TB
 
 ---
 
+## 2.3 端云协同完整架构（含 Multi-Agent + GraphRAG-X）
+
+以下架构图展示了最新的端云协同设计，包括 Multi-Agent 编排层和 GraphRAG-X 混合检索框架的集成：
+
+```mermaid
+graph TB
+    subgraph FRONTEND["前端层"]
+        WEB["React Web App"]
+        MOBILE["Expo Mobile App"]
+        DESKTOP["Tauri Desktop App<br/>(含 EduEdge AI SDK)"]
+    end
+
+    subgraph EDGE_ROUTER["端侧路由层"]
+        EDGE_SDK["EduEdge AI SDK<br/>(StreamId 并发隔离)"]
+        LOCAL_LLM["本地 LLM 推理<br/>(CoreML/Metal/DirectML)"]
+    end
+
+    subgraph BACKEND_GATEWAY["后端网关 (Go + Gin)"]
+        AUTH["JWT 鉴权 + RBAC"]
+        ROUTES["路由层 /api/v1/*"]
+    end
+
+    subgraph CLOUD_AI["云端 AI 服务层"]
+        MULTI_AGENT["Multi-Agent 编排器<br/>(LangGraph)"]
+
+        subgraph EXPERTS["专家节点"]
+            DISPATCHER["Dispatcher<br/>(意图识别)"]
+            VISUAL["Visual Analyzer<br/>(图像理解)"]
+            CODER["Coder Copilot<br/>(代码分析+Sandbox)"]
+            RESEARCHER["Researcher<br/>(知识检索)"]
+            SYNTHESIZER["Synthesizer<br/>(结果合成)"]
+        end
+    end
+
+    subgraph GRAPHRAG_LAYER["GraphRAG-X 检索层"]
+        HYBRID_ENGINE["Hybrid Fusion Engine"]
+        VECTOR_STORE["Vector Store<br/>(Faiss)"]
+        GRAPH_STORE["Graph Store<br/>(NetworkX/Neo4j)"]
+    end
+
+    subgraph DATA_LAYER["数据层"]
+        MYSQL[("MySQL<br/>用户/课程/作业")]
+        MINIO["MinIO<br/>文件存储"]
+    end
+
+    subgraph CLOUD_FALLBACK["云端 LLM (Fallback)"]
+        DASHSCOPE["DashScope<br/>(Qwen-Plus/Max)"]
+        OPENAI["OpenAI Compatible"]
+    end
+
+    %% 前端到路由层
+    WEB --> ROUTES
+    MOBILE --> ROUTES
+    DESKTOP --> EDGE_SDK
+    EDGE_SDK --> LOCAL_LLM
+    EDGE_SDK -.->|"超时/失败"| ROUTES
+
+    %% 后端网关到 AI 服务
+    ROUTES --> AUTH
+    AUTH --> MULTI_AGENT
+
+    %% Multi-Agent 内部流转
+    MULTI_AGENT --> DISPATCHER
+    DISPATCHER --> VISUAL
+    DISPATCHER --> CODER
+    DISPATCHER --> RESEARCHER
+    VISUAL --> SYNTHESIZER
+    CODER --> SYNTHESIZER
+    RESEARCHER --> SYNTHESIZER
+
+    %% Researcher 调用 GraphRAG-X
+    RESEARCHER --> HYBRID_ENGINE
+    HYBRID_ENGINE --> VECTOR_STORE
+    HYBRID_ENGINE --> GRAPH_STORE
+
+    %% 云端 LLM Fallback
+    MULTI_AGENT -.->|"本地失败"| DASHSCOPE
+    MULTI_AGENT -.->|"本地失败"| OPENAI
+
+    %% 数据层连接
+    AUTH --> MYSQL
+    ROUTES --> MINIO
+    GRAPH_STORE --> MYSQL
+
+    style MULTI_AGENT fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style HYBRID_ENGINE fill:#fff4e1,stroke:#e65100,stroke-width:3px
+    style EDGE_SDK fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+```
+
+### 2.3.1 架构层次说明
+
+| 层级 | 组件 | 职责 |
+|------|------|------|
+| **前端层** | React/Expo/Tauri | 用户交互界面，统一使用 `@classplatform/shared` SDK |
+| **端侧路由层** | EduEdge AI SDK | 本地模型推理，StreamId 并发隔离，硬件感知优化 |
+| **后端网关** | Go + Gin | JWT 鉴权、RBAC 权限校验、请求路由 |
+| **云端 AI 服务** | Multi-Agent 编排器 | 基于 LangGraph 的状态机编排，专家分工协作 |
+| **GraphRAG-X 检索层** | 混合检索引擎 | 向量搜索 + 图扩展 + 重排序融合 |
+| **数据层** | MySQL + MinIO | 结构化数据 + 对象存储 |
+| **云端 Fallback** | DashScope/OpenAI | 本地推理失败时的云端备份 |
+
+### 2.3.2 关键数据流
+
+::: info 典型请求流程：学生提问"为什么 FDTD 边界会反射？"
+1. **前端**：用户在 Web 端输入问题，附带代码片段
+2. **后端网关**：验证 JWT，提取 `user_id`，转发到 Multi-Agent
+3. **Dispatcher**：检测到代码附件，选择 `coder_copilot` 专家；检测到关键词"为什么"，设置 `need_theory=true`
+4. **Coder Copilot**：静态分析代码，检测 PML 边界条件缺失，在 Sandbox 中执行代码
+5. **Researcher**：调用 GraphRAG-X 检索"FDTD 边界反射"相关知识
+   - Vector Store 召回 top-5 相关文档片段
+   - Graph Store 从种子实体扩展 2-hop 子图
+   - Hybrid Fusion 计算加权分数并排序
+6. **Synthesizer**：融合 Coder 和 Researcher 的结果，生成最终回答
+7. **后端网关**：记录学习事件到 MySQL，返回响应给前端
+:::
+
+### 2.3.3 并发与隔离
+
+- **前端并发**：多个聊天窗口通过 `streamId` 隔离，互不干扰
+- **专家并发**：Visual Analyzer 和 Coder Copilot 可并行执行
+- **检索并发**：Vector Search 和 Graph Expansion 并行执行
+
+---
+
+## 2.5 端侧推理引擎选型与架构
+
+### 2.5.1 @jadesnow7/edge-ai-sdk 分层架构
+
+桌面端（Tauri）通过 **@jadesnow7/edge-ai-sdk** 实现本地大模型推理能力。该 SDK 采用三层架构设计：
+
+```mermaid
+graph TB
+    subgraph TS["TypeScript Binding Layer"]
+        LOCALAI["LocalAI 单例类<br/>streamChat() / init()"]
+        EVENTS["事件管理器<br/>StreamId 隔离协议"]
+    end
+
+    subgraph PLUGIN["Tauri Plugin Layer (Rust)"]
+        IPC["IPC 命令处理<br/>stream_chat / get_hardware"]
+        EMIT["事件发射器<br/>llm-token:{streamId}"]
+    end
+
+    subgraph CORE["Rust Core (@edge-ai/core)"]
+        HW["硬件探测<br/>NPU / GPU / CPU"]
+        ENGINE["推理引擎适配<br/>vLLM / llama.cpp"]
+    end
+
+    LOCALAI -->|invoke| IPC
+    IPC -->|调用| HW & ENGINE
+    ENGINE -->|emit| EMIT
+    EMIT -->|listen| EVENTS
+    EVENTS -->|回调| LOCALAI
+```
+
+**核心组件职责：**
+
+| 层级 | 组件 | 职责 |
+|------|------|------|
+| **TS Binding** | `LocalAI` 单例 | 前端统一入口，封装 Tauri IPC 调用 |
+| **TS Binding** | 事件管理器 | StreamId 生成、事件挂载与自动解绑 |
+| **Tauri Plugin** | IPC 命令处理 | 接收前端请求，调度 Rust Core |
+| **Tauri Plugin** | 事件发射器 | 将推理 Token 通过 IPC 发送至前端 |
+| **Rust Core** | 硬件探测 | 检测 NPU/GPU 可用性与性能参数 |
+| **Rust Core** | 推理引擎 | 加载模型、执行推理、流式输出 |
+
+### 2.5.2 IPC 并发流隔离协议（StreamId）
+
+**问题背景**：桌面端可能同时运行多个 AI 会话（如"代码审查"和"侧边栏答疑"），若所有会话共享同一个全局事件名（如 `llm-token`），会导致 Token 串流污染前端 UI。
+
+**解决方案**：引入 **StreamId 隔离协议**，为每次会话生成独立的 UUID，底层事件名动态拼接为 `llm-token:${streamId}`。
+
+```mermaid
+sequenceDiagram
+    participant FE as 前端 (React)
+    participant SDK as LocalAI SDK
+    participant TAURI as Tauri Plugin
+    participant CORE as Rust Core
+
+    FE->>SDK: streamChat(messages)
+    SDK->>SDK: 生成 streamId = uuid()
+    SDK->>TAURI: invoke("stream_chat", {streamId, messages})
+    SDK->>SDK: listen("llm-token:{streamId}")
+
+    TAURI->>CORE: 启动推理任务
+    loop 流式输出
+        CORE->>TAURI: 生成 Token
+        TAURI->>SDK: emit("llm-token:{streamId}", token)
+        SDK->>FE: onMessage(token)
+    end
+
+    CORE->>TAURI: 推理完成
+    TAURI->>SDK: emit("llm-token:{streamId}", {done: true})
+    SDK->>SDK: unlisten("llm-token:{streamId}")
+    SDK->>FE: onFinish()
+```
+
+**关键特性：**
+
+- **自动化生命周期管理**：SDK 内部自动挂载事件监听器，并在流结束时自动 `unlisten`，完全杜绝内存泄漏
+- **并发安全**：多个会话的 Token 通过不同的 `streamId` 隔离，互不干扰
+- **透明化**：前端开发者无需手动管理 `streamId` 和事件解绑，调用 `LocalAI.streamChat()` 即可
+
+**前端调用示例：**
+
+```typescript
+import { LocalAI } from '@jadesnow7/edge-ai-sdk';
+
+// 初始化（应用启动时执行一次）
+await LocalAI.init();
+
+// 流式对话（SDK 自动管理 StreamId 和事件生命周期）
+await LocalAI.streamChat(
+  [{ role: 'user', content: '解释电磁感应定律' }],
+  {
+    onMessage: (token) => setReply(prev => prev + token),
+    onFinish: () => setStatus('done'),
+    onError: (err) => console.error(err),
+  }
+);
+```
+
+---
+
 ## 3. 端云协同机制
 
 ### 3.1 路由策略总览
@@ -356,6 +579,7 @@ graph LR
 | 前端框架 | React 19 + Vite 7 | Vue / SvelteKit | 团队熟悉度、企业微信 H5 兼容性 |
 | 移动端 | Expo (React Native) | Flutter | 与 Web 共享业务逻辑、JS 生态复用 |
 | Desktop | Tauri (Rust) | Electron | 内存占用低 50%，本地推理安全沙箱 |
+| **端侧推理 SDK** | **@jadesnow7/edge-ai-sdk** | **直接调用 Tauri IPC** | **StreamId 隔离协议、自动事件管理、并发安全** |
 | 数据库 | MySQL 8.4 | PostgreSQL | 国内高校运维熟悉度、分层索引兼容性 |
 | 向量存储 | 本地文件 (FAISS) | Weaviate / Qdrant | 无外部依赖，适合私有化部署 |
 | API 版本 | `/api/v1` 前缀 | URL-less 版本 | 显式版本，便于运维审计与 Nginx 路由 |
@@ -363,6 +587,7 @@ graph LR
 ---
 
 ## 9. 相关架构文档
+
 
 - [本地 LLM Runtime 架构](/05-explanation/architecture/local-ai-runtime) — Desktop 壳层队列机制与云端职责边界
 - [React 分层架构](/05-explanation/architecture/react-layered-architecture) — 前端领域层与 SDK 结构

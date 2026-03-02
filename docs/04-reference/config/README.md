@@ -1,29 +1,26 @@
-# 配置参考手册
+# 配置参考（精简版）
 
-本平台主要通过环境变量 (Environment Variables) 进行配置。
+本页给出新人最常用的阻断级配置项。完整配置请查看 [配置索引](./index.md)。
 
-## 后端服务 (.env)
+## 数据库（开发 / 生产）
 
-| 变量名 | 必填 | 默认值 | 说明 |
-|--------|------|--------|------|
-| `DB_HOST` | 是 | localhost | 数据库主机地址 |
-| `DB_PORT` | 是 | 3306 | 数据库端口 |
-| `DB_NAME` | 是 | - | 数据库名称 |
-| `DB_USER` | 是 | - | 数据库用户名 |
-| `DB_PASSWORD` | 是 | - | 数据库密码 |
-| `JWT_SECRET` | 是 | - | JWT 签名密钥 (生产环境请勿泄露) |
-| `PORT` | 否 | 8080 | 服务监听端口 |
+| 变量 | 场景 | 说明 |
+|------|------|------|
+| `DB_DSN` | 本地开发 | 后端运行时数据库连接串；可用 `sqlite:emfield.db` 快速启动。 |
+| `MYSQL_DATABASE` | 生产/容器 | MySQL 数据库名；与 `MYSQL_USER`、`MYSQL_PASSWORD`、`BACKEND_DB_DSN` 配套使用。 |
 
-## AI 服务
+## 端云协同与网关
 
-| 变量名 | 必填 | 说明 |
-|--------|------|------|
-| `LLM_API_KEY` | 是 | 用于调用大模型的 API Key |
-| `LLM_BASE_URL` | 否 | 模型 API 基础 URL (支持 OpenAI 格式) |
-| `LLM_MODEL` | 否 | 指定使用的模型 (如 gpt-4o) |
+| 变量 | 说明 |
+|------|------|
+| `EDGE_ROUTER_ENGINE` | 端云协同路由引擎（`js` / `rust`），当前推荐 `js`。 |
+| `BACKEND_SIM_BASE_URL` | 后端网关转发 Python 仿真服务的目标地址（缺失会导致 `/api/v1/sim/*` 不可用）。 |
 
-## 前端构建
+## AI 基础上游
 
-| 变量名 | 说明 |
-|--------|------|
-| `VITE_API_BASE_URL` | 后端 API 地址 (构建时注入) |
+| 变量 | 说明 |
+|------|------|
+| `LLM_BASE_URL` | OpenAI-compatible 上游基础地址（兼容旧版单变量）。 |
+| `LLM_API_KEY` | 上游 API Key（兼容旧版单变量）。 |
+
+> 推荐：新部署优先使用分层变量（`LLM_BASE_URL_CLOUD` / `LLM_API_KEY_CLOUD` 与 local/text/vl 组合）。

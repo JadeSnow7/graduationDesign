@@ -73,6 +73,7 @@ export default defineConfig({
                         { text: '课程管理', link: '/04-reference/api/course' },
                         { text: 'AI 服务', link: '/04-reference/api/ai' },
                         { text: '仿真服务', link: '/04-reference/api/simulation' },
+                        { text: '工作台接口', link: '/04-reference/api/workspace' },
                         { text: 'OpenAPI 定义', link: '/04-reference/api/openapi' },
                         { text: '版本治理', link: '/04-reference/versioning/' },
                         { text: '契约锁定策略', link: '/04-reference/versioning/api-lock-policy' }
@@ -107,6 +108,12 @@ export default defineConfig({
                     ]
                 },
                 {
+                    text: '架构落地',
+                    items: [
+                        { text: '前端 API 实现状态', link: '/05-explanation/architecture/frontend-api-implementation-status' }
+                    ]
+                },
+                {
                     text: 'AI 机制',
                     items: [
                         { text: '模型路由策略', link: '/05-explanation/ai/model-routing-policy' },
@@ -114,6 +121,14 @@ export default defineConfig({
                         { text: 'GraphRAG', link: '/05-explanation/ai/graph-rag' },
                         { text: '引导式学习', link: '/05-explanation/ai/guided-learning' },
                         { text: '工具调用', link: '/05-explanation/ai/tool-calling' }
+                    ]
+                },
+                {
+                    text: '核心架构',
+                    items: [
+                        { text: 'Multi-Agent 协作架构', link: '/05-explanation/multi-agent-architecture' },
+                        { text: 'GraphRAG-X 混合检索', link: '/05-explanation/graphrag-x' },
+                        { text: 'Edge SDK IPC 通信', link: '/05-explanation/edge-sdk-ipc' }
                     ]
                 }
             ],
@@ -141,7 +156,10 @@ export default defineConfig({
                 {
                     text: '发布说明',
                     items: [
-                        { text: '总览', link: '/07-release-notes/' }
+                        { text: '总览', link: '/07-release-notes/' },
+                        { text: '合规性审查（2026-02-26）', link: '/07-release-notes/compliance-audit-2026-02-26' },
+                        { text: '后端重构（2026-02-11）', link: '/07-release-notes/backend-refactoring-2026-02-11' },
+                        { text: '文档体系完善（2026-02-09）', link: '/07-release-notes/doc-update-2026-02-09' }
                     ]
                 }
             ]

@@ -1980,8 +1980,8 @@ paths:
 
   /workspace/jobs:
     get:
-      x-status: planned
-      description: "⚠️ 计划中（Planned）：后端路由尚未注册，当前不可调用。"
+      x-status: mock
+      description: "⚠️ Mock/POC：接口可调用，但任务状态与进度为内存态模拟，不保证持久化。"
       summary: 工作台任务列表
       responses:
         '200':
@@ -2005,8 +2005,8 @@ paths:
 
   /workspace/jobs/{jobId}:
     get:
-      x-status: planned
-      description: "⚠️ 计划中（Planned）：后端路由尚未注册，当前不可调用。"
+      x-status: mock
+      description: "⚠️ Mock/POC：接口可调用，但任务状态与进度为内存态模拟，不保证持久化。"
       summary: 工作台任务详情
       parameters:
         - in: path
@@ -2039,8 +2039,8 @@ paths:
 
   /workspace/simulations:
     post:
-      x-status: planned
-      description: "⚠️ 计划中（Planned）：后端路由尚未注册，当前不可调用。"
+      x-status: mock
+      description: "⚠️ Mock/POC：接口可调用，但任务状态与进度为内存态模拟，不保证持久化。"
       summary: 提交工作台仿真任务
       requestBody:
         required: true

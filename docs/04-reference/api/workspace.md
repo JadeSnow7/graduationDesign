@@ -3,7 +3,7 @@
 > 本页文档化电磁场仿真工作台的全部接口，包括异步任务调度（`/api/v1/workspace/*`）和直连仿真计算（`/api/v1/sim/*`、`/api/v1/calc/*`）。
 
 ::: warning 实现状态（WIP / Demo）
-**`/api/v1/workspace/*` 异步路由当前尚未在后端注册**（见 `code/backend/internal/http/router.go`），前端工作台页面（`Workspace.tsx` / `WorkspaceHubPage.tsx`）使用 `setTimeout` Mock 模拟轮询，并非真实 API 链路。本页异步工作台接口契约为**设计规范**，实现状态为**计划中（Planned）**。
+**`/api/v1/workspace/*` 已注册并可调用**：当前实现使用后端进程内内存态任务池，重启后任务会丢失；`queued/running/completed` 状态与进度为模拟演进，用于联调验证，不代表真实调度与持久化能力。
 
 同步直连仿真（`/api/v1/sim/*`、`/api/v1/calc/*`）已正常可用。
 :::
@@ -210,8 +210,9 @@ type WorkspaceSimulationResult = {
 
 ## 前端轮询最佳实践
 
-::: warning Demo 代码
-以下示例展示接口调通后的预期用法，当前前端实现为 Mock（`setTimeout` 模拟状态流转），不可直接在生产链路中使用。
+::: warning 降级说明
+前端默认使用真实接口轮询（`setInterval + GET /workspace/jobs/{jobId}`）。
+当后端返回 `404/501/503` 或不可达时，界面会显式显示 `[Mock Mode]` 并降级为本地演示流程。
 :::
 
 ```typescript
@@ -301,8 +302,13 @@ async function runSimulation(params: WorkspaceSimulationParams) {
 |------|--------------|------|
 | 400 | `INVALID_PARAMS` | 仿真参数格式错误或超出范围 |
 | 404 | `JOB_NOT_FOUND` | `jobId` 不存在或不属于当前用户 |
+| 501 | `NOT_IMPLEMENTED` | Workspace 接口未启用（返回此状态码时前端自动降级为 Mock 模式） |
 | 503 | `SIM_SERVICE_UNAVAILABLE` | 仿真服务不可达 |
 | 429 | `RATE_LIMIT_EXCEEDED` | 提交频率超限 |
+
+::: tip 前端降级策略
+当后端返回 **404/501/503** 或网络不可达时，前端会显式显示 `[Mock Mode]` 标识，并降级为本地演示流程（模拟 `queued → running → completed` 状态演进）。详见 `code/frontend/src/pages/WorkspacePage.tsx`。
+:::
 
 ---
 

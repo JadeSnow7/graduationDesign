@@ -72,6 +72,23 @@ jobs:
       - name: Test
         run: npm run test -- --run
 
+  frontend_api_realism:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: code/frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: API realism audit
+        run: npm run audit:api-realism
+
   ai_service:
     runs-on: ubuntu-latest
     defaults:

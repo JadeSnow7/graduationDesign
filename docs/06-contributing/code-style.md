@@ -121,39 +121,46 @@ test(backend): 为 assignment_service 添加覆盖率测试
 
 #### 颜色 Token（CSS 变量 + Tailwind）
 
-在 `src/styles/` 中定义语义化 CSS 变量，严禁在组件中直接使用硬编码颜色值：
+在 `src/styles/theme.css` 中定义语义化 CSS 变量，严禁在组件中直接使用硬编码颜色值：
 
 ```css
-/* src/styles/tokens.css */
+/* src/styles/theme.css */
 :root {
-  /* 品牌主色 */
-  --color-brand-primary: #1677ff;      /* Ant Design Blue */
-  --color-brand-secondary: #4096ff;
+  /* 应用主色 */
+  --app-bg: #ffffff;
+  --app-panel: #f8fafc;
+  --app-border: #e2e8f0;
+  --app-text: #0f172a;
+  --app-text-muted: #64748b;
+  --app-primary: #2563eb;
+  --app-primary-strong: #1d4ed8;
 
-  /* 状态色 */
-  --color-success: #52c41a;
-  --color-warning: #faad14;
-  --color-error: #ff4d4f;
+  /* 语义色 */
+  --app-success: #16a34a;
+  --app-warning: #f59e0b;
+  --app-danger: #ef4444;
 
-  /* 中性色 */
-  --color-text-primary: rgba(0, 0, 0, 0.88);
-  --color-text-secondary: rgba(0, 0, 0, 0.45);
-  --color-bg-base: #ffffff;
-  --color-bg-subtle: #f5f5f5;
-  --color-border: #d9d9d9;
+  /* 兼容性映射（旧页面使用） */
+  --surface-bg: var(--app-bg);
+  --surface-panel: var(--app-panel);
+  --surface-border: var(--app-border);
+  --text-main: var(--app-text);
+  --text-muted: var(--app-text-muted);
+}
+
+.dark {
+  --app-bg: #0f172a;
+  --app-panel: #020617;
+  --app-text: #f8fafc;
+  --app-text-muted: #94a3b8;
+  /* ... */
 }
 ```
 
-在 Tailwind 配置中映射：
-
-```css
-/* tailwind.config.css —— Tailwind v4 方式 */
-@theme {
-  --color-brand: var(--color-brand-primary);
-  --color-brand-light: var(--color-brand-secondary);
-  --color-muted: var(--color-text-secondary);
-}
-```
+**使用规范：**
+- ✅ 推荐：`bg-[var(--app-bg)]` 或 `text-[var(--app-text)]`
+- ❌ 禁止：`bg-white`、`text-gray-900`（硬编码颜色）
+- ⚠️ 兼容：`--surface-*` 和 `--text-*` 前缀仅用于旧页面迁移，新代码统一使用 `--app-*`
 
 #### 间距与排版 Token
 
@@ -223,7 +230,46 @@ Tailwind 工具类 > Ant Design Token（ConfigProvider）> CSS 变量 > 内联 s
 - ❌ 在非 `ThemeProvider` 处创建额外的 `<ConfigProvider>`
 :::
 
-### 6.3 文件命名规范
+### 6.3 桌面端（Tauri）开发规范
+
+#### 窗口拖拽区域
+
+桌面端标题栏需要添加 `data-tauri-drag-region` 属性以支持窗口拖拽，但该属性会**吞没所有鼠标事件**（包括点击）。
+
+**正确用法：**
+
+```tsx
+// ✅ 正确：拖拽区域与交互元素分离
+<div className="titlebar" data-tauri-drag-region>
+  <div className="title">应用标题</div>
+  {/* 按钮区域不添加 drag-region */}
+  <div className="actions">
+    <button onClick={handleMinimize}>最小化</button>
+    <button onClick={handleClose}>关闭</button>
+  </div>
+</div>
+
+// ❌ 错误：整个标题栏添加 drag-region，导致按钮无法点击
+<div className="titlebar" data-tauri-drag-region>
+  <button onClick={handleClose}>关闭</button>  {/* 点击无效！ */}
+</div>
+```
+
+**CSS 配合：**
+
+```css
+/* 全局禁用文本选择，避免拖拽时选中文本 */
+body {
+  user-select: none;
+}
+
+/* 对可编辑区域豁免 */
+input, textarea, [contenteditable] {
+  user-select: text;
+}
+```
+
+### 6.4 文件命名规范
 
 | 类型 | 命名风格 | 示例 |
 |------|---------|------|
