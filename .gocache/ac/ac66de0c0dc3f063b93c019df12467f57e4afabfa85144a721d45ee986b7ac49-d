@@ -1,0 +1,13 @@
+./ai_config.go
+./announcement.go
+./assignment.go
+./attendance.go
+./auth_session.go
+./chapter.go
+./course.go
+./doc.go
+./learning_event.go
+./quiz.go
+./resource.go
+./user.go
+./writing.go

@@ -1,0 +1,13 @@
+./ai_config_repository.go
+./announcement_repository.go
+./assignment_repository.go
+./attendance_repository.go
+./chapter_repository.go
+./course_repository.go
+./global_profile_repository.go
+./interfaces.go
+./learning_profile_repository.go
+./quiz_repository.go
+./resource_repository.go
+./user_repository.go
+./writing_repository.go

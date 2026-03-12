@@ -1,0 +1,8 @@
+=== RUN   TestLogin_Success
+--- PASS: TestLogin_Success (0.01s)
+=== RUN   TestLogin_PendingActivationBlocked
+--- PASS: TestLogin_PendingActivationBlocked (0.00s)
+=== RUN   TestActivateRefreshAndMe_FullFlow
+--- PASS: TestActivateRefreshAndMe_FullFlow (0.01s)
+PASS
+ok  	github.com/huaodong/llm-teaching-platform/backend/internal/http	0.494s
