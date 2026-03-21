@@ -1632,6 +1632,18 @@ paths:
           name: courseId
           required: true
           schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timeout_minutes: { type: integer }
+                location_required: { type: boolean }
+                center_latitude: { type: number, format: double }
+                center_longitude: { type: number, format: double }
+                radius_meters: { type: integer }
       responses:
         '200': { description: 成功 }
 
@@ -1654,6 +1666,17 @@ paths:
           name: sessionId
           required: true
           schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, latitude, longitude]
+              properties:
+                code: { type: string }
+                latitude: { type: number, format: double }
+                longitude: { type: number, format: double }
       responses:
         '200': { description: 成功 }
 
