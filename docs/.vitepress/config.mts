@@ -12,9 +12,12 @@ export default defineConfig({
         nav: [
             { text: '首页', link: '/' },
             { text: '入门', link: '/01-getting-started/' },
+            { text: '教程', link: '/02-tutorials/' },
+            { text: '操作指南', link: '/03-how-to-guides/' },
             { text: '参考', link: '/04-reference/' },
             { text: '解释', link: '/05-explanation/' },
-            { text: '贡献', link: '/06-contributing/' }
+            { text: '贡献', link: '/06-contributing/' },
+            { text: '发版说明', link: '/07-release-notes/' }
         ],
 
         sidebar: {
@@ -59,7 +62,10 @@ export default defineConfig({
                         { text: 'NPU 分层部署', link: '/03-how-to-guides/deployment/npu-tiered-deployment' },
                         { text: 'Docker 部署', link: '/03-how-to-guides/deployment/docker-deployment' },
                         { text: '生产部署', link: '/03-how-to-guides/deployment/production-deployment' },
-                        { text: '故障排查', link: '/03-how-to-guides/deployment/troubleshooting' }
+                        { text: '故障排查', link: '/03-how-to-guides/deployment/troubleshooting' },
+                        { text: '监控运维', link: '/03-how-to-guides/deployment/monitoring' },
+                        { text: '备份与恢复', link: '/03-how-to-guides/deployment/backup-recovery' },
+                        { text: '企业微信配置', link: '/03-how-to-guides/deployment/wechat_work_guide' }
                     ]
                 }
             ],
@@ -100,27 +106,19 @@ export default defineConfig({
                         { text: '系统设计', link: '/05-explanation/system-design' },
                         { text: '权限模型', link: '/05-explanation/rbac-model' },
                         { text: 'AI 流程', link: '/05-explanation/ai-pipeline' },
-                        { text: 'AI 文档总览', link: '/05-explanation/ai/' },
                         { text: '需求文档', link: '/05-explanation/requirements' },
                         { text: '功能模块', link: '/05-explanation/feature-modules' },
-                        { text: '前端交互', link: '/05-explanation/frontend-api-architecture-interaction' },
+                        { text: '前端交互架构', link: '/05-explanation/frontend-api-architecture-interaction' },
+                        { text: '前端页面设计', link: '/05-explanation/frontend-page-design' },
                         { text: '跨平台迁移', link: '/05-explanation/cross-platform-migration-plan' }
                     ]
                 },
                 {
-                    text: '架构落地',
+                    text: '前端 API 规范',
                     items: [
-                        { text: '前端 API 实现状态', link: '/05-explanation/architecture/frontend-api-implementation-status' }
-                    ]
-                },
-                {
-                    text: 'AI 机制',
-                    items: [
-                        { text: '模型路由策略', link: '/05-explanation/ai/model-routing-policy' },
-                        { text: 'Qwen3-VL 迁移基线', link: '/05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09' },
-                        { text: 'GraphRAG', link: '/05-explanation/ai/graph-rag' },
-                        { text: '引导式学习', link: '/05-explanation/ai/guided-learning' },
-                        { text: '工具调用', link: '/05-explanation/ai/tool-calling' }
+                        { text: 'API 契约设计规范', link: '/05-explanation/frontend-api-refactor-list' },
+                        { text: 'API 重构 RFC', link: '/05-explanation/frontend-api-refactor-rfc' },
+                        { text: 'API 对齐提示词', link: '/05-explanation/frontend-api-alignment-prompt' }
                     ]
                 },
                 {
@@ -129,6 +127,41 @@ export default defineConfig({
                         { text: 'Multi-Agent 协作架构', link: '/05-explanation/multi-agent-architecture' },
                         { text: 'GraphRAG-X 混合检索', link: '/05-explanation/graphrag-x' },
                         { text: 'Edge SDK IPC 通信', link: '/05-explanation/edge-sdk-ipc' }
+                    ]
+                },
+                {
+                    text: '架构落地',
+                    items: [
+                        { text: '前端 API 实现状态', link: '/05-explanation/architecture/frontend-api-implementation-status' },
+                        { text: '项目设计文档', link: '/05-explanation/architecture/project-design-document' },
+                        { text: '组件设计', link: '/05-explanation/architecture/component-design' },
+                        { text: 'React 分层架构', link: '/05-explanation/architecture/react-layered-architecture' },
+                        { text: '解耦架构规范', link: '/05-explanation/architecture/decoupled-architecture-spec' },
+                        { text: 'Shared SDK 结构', link: '/05-explanation/architecture/shared-sdk-structure' },
+                        { text: '本地 AI 运行时', link: '/05-explanation/architecture/local-ai-runtime' },
+                        { text: '小程序选型', link: '/05-explanation/architecture/mini-app-selection' },
+                        { text: '模块门控计划', link: '/05-explanation/architecture/module-gating-plan' },
+                        { text: 'API 对齐计划', link: '/05-explanation/architecture/api-alignment-plan' },
+                        { text: 'Rust 增强 POC', link: '/05-explanation/architecture/rust-enhancement-poc-plan-2026-02-11' },
+                        { text: '遗留开发记录', link: '/05-explanation/architecture/legacy-dev' }
+                    ]
+                },
+                {
+                    text: 'AI 机制',
+                    items: [
+                        { text: 'AI 文档总览', link: '/05-explanation/ai/' },
+                        { text: '模型路由策略', link: '/05-explanation/ai/model-routing-policy' },
+                        { text: 'Qwen3-VL 迁移基线', link: '/05-explanation/ai/qwen3-vl-migration-baseline-2026-02-09' },
+                        { text: 'GraphRAG', link: '/05-explanation/ai/graph-rag' },
+                        { text: '引导式学习', link: '/05-explanation/ai/guided-learning' },
+                        { text: '工具调用', link: '/05-explanation/ai/tool-calling' },
+                        { text: '学习分析', link: '/05-explanation/ai/learning-analytics' },
+                        { text: '知识蒸馏', link: '/05-explanation/ai/distillation' },
+                        { text: '后训练微调计划', link: '/05-explanation/ai/post-training-finetuning-plan' },
+                        { text: '训练数据规范', link: '/05-explanation/ai/training-data-spec' },
+                        { text: '训练环境配置', link: '/05-explanation/ai/training-environment' },
+                        { text: '参考论文', link: '/05-explanation/ai/papers' },
+                        { text: '首次训练记录（2026-02-08）', link: '/05-explanation/ai/training-runs/2026-02-08-first-train' }
                     ]
                 }
             ],
@@ -149,6 +182,13 @@ export default defineConfig({
                     items: [
                         { text: 'Plan 模式协作流程', link: '/06-contributing/plan-mode-workflow' },
                         { text: 'Plan 模式计划模板', link: '/06-contributing/plan-mode-template' }
+                    ]
+                },
+                {
+                    text: '文档模板',
+                    items: [
+                        { text: 'API 端点模板', link: '/templates/api-endpoint-template' },
+                        { text: 'How-To 模板', link: '/templates/how-to-template' }
                     ]
                 }
             ],
