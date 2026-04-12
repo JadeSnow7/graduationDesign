@@ -13,3 +13,6 @@
 [submodule "graphrag-x"]
 	path = graphrag-x
 	url = https://github.com/JadeSnow7/GraphRAG-X.git
+[submodule "inference-engine-v2"]
+	path = inference-engine-v2
+	url = https://github.com/JadeSnow7/inference-engine-v2.git
