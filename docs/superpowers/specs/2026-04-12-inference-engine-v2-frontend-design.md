@@ -276,9 +276,148 @@ SSE 事件：
 
 ---
 
-## 13. 答辩验收标准
+## 13. V3 工程约束（强制）
+
+### A. SSE 流解码
+
+必须使用 `TextDecoder('utf-8', { stream: true })` 流式解码，禁止直接拼接 `Uint8Array`，防止中文乱码：
+
+```ts
+const decoder = new TextDecoder('utf-8')
+let buffer = ''
+
+while (true) {
+  const { done, value } = await reader.read()
+  if (done) break
+
+  buffer += decoder.decode(value, { stream: true })
+
+  let boundary = buffer.indexOf('\n\n')
+  while (boundary !== -1) {
+    const raw = buffer.slice(0, boundary)
+    buffer = buffer.slice(boundary + 2)
+    if (raw.startsWith('data: ')) {
+      try { handleEvent(JSON.parse(raw.slice(6))) } catch { /* 忽略脏数据 */ }
+    }
+    boundary = buffer.indexOf('\n\n')
+  }
+}
+```
+
+- JSON.parse 失败必须静默忽略，不中断流
+- 必须容忍半包/脏数据
+
+### B. SSE 并发与生命周期控制
+
+防止多请求流污染，模块级维护单例 controller：
+
+```ts
+let currentController: AbortController | null = null
+
+function startSSE() {
+  currentController?.abort()
+  const controller = new AbortController()
+  currentController = controller
+  return controller
+}
+```
+
+- 新请求必须 abort 旧请求
+- 每条消息绑定独立 `assistantId`
+- `done`/`error` 只作用于当前流的 `assistantId`
+
+### C. 状态一致性重置
+
+每次新请求开始前必须执行：
+
+```ts
+chatStore.resetStreaming()
+pipelineStore.clearStages()
+sidebarStore.clear()
+```
+
+防止上一轮文献残留、阶段错乱。
+
+### D. 后端 Auth 依赖
+
+`backend/requirements.txt` 追加：
+
+```
+passlib[bcrypt]>=1.7.4
+```
+
+使用方式：
+
+```python
+from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+```
+
+### E. 统一 API 请求封装
+
+`apiFetch` 必须实现 401 自动跳转：
+
+```ts
+export async function apiFetch(url: string, options: RequestInit = {}) {
+  const token = localStorage.getItem('token')
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
+  })
+  if (res.status === 401) {
+    useUserStore.getState().logout()
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+```
+
+### F. 邮箱校验正则
+
+```ts
+/^[a-zA-Z0-9._%+-]+@(stu\.)?hust\.edu\.cn$/
+```
+
+### G. 消息 ID 生成
+
+```ts
+function genId() {
+  return `${Date.now()}_${Math.random().toString(16).slice(2)}`
+}
+```
+
+### H. SSE 错误兜底
+
+```ts
+onError(err) {
+  appendToken(id, `\n\n> ⚠ ${err.message || '连接异常'}`)
+  finalizeMessage(id)
+}
+```
+
+### I. 组件卸载必须中断请求
+
+```ts
+useEffect(() => () => { controller.abort() }, [])
+```
+
+### J. 流式渲染性能（建议）
+
+- 使用 `React.memo(StreamingBubble)`
+- token 更新节流 30–50ms 或 `requestAnimationFrame`
+
+---
+
+## 14. 答辩验收标准
 
 1. **开题报告生成**：StageIndicator 依次经历 6 个阶段，sidebar 出现文献和研究空白，主区流式渲染 Markdown 大纲
 2. **Onboarding**：首次使用弹出三步问卷，刷新后不再显示
 3. **带教风格差异**：不同 teachingStyle 设置影响 AI 回复风格（由后端 prompt 控制，前端正确透传）
 4. **Auth**：非 hust 邮箱注册被拒，正确注册后登录跳主界面，刷新保持登录态
+5. **中文无乱码**：长文本流式输出不出现乱码、JSON 崩溃或流污染
