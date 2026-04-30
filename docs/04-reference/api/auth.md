@@ -4,12 +4,13 @@
 
 ## 认证方式概览
 
-平台支持两种登录方式，均返回相同结构的 JWT Token：
+平台支持三种登录方式，均返回相同结构的 JWT Token：
 
 | 方式 | 端点 | 适用场景 |
 |------|------|---------|
 | 用户名 + 密码 | `POST /api/v1/auth/login` | Web / Desktop / Mobile 登录 |
 | 企业微信 OAuth | `POST /api/v1/auth/wecom` | 企业微信客户端内嵌场景 |
+| 飞书 OAuth | `POST /api/v1/auth/feishu` | 飞书小程序 / 飞书容器内登录 |
 
 ---
 
@@ -208,6 +209,96 @@ sequenceDiagram
   }
 }
 ```
+
+---
+
+## 飞书 OAuth 登录流程
+
+```mermaid
+sequenceDiagram
+    participant FM as 飞书小程序 / 飞书客户端
+    participant FE as 飞书前端
+    participant BE as 后端 (Go)
+    participant FS as 飞书开放平台
+
+    FM->>FE: 打开小程序 / 页面
+    FE->>FM: tt.login()
+    FM-->>FE: 返回 code
+    FE->>BE: POST /api/v1/auth/feishu {"code":"xxxxxx"}
+    BE->>FS: 使用 App ID / Secret 获取 tenant_access_token
+    FS-->>BE: tenant_access_token
+    BE->>FS: 用 code 换用户 access_token / user_info
+    FS-->>BE: open_id / user_id / name / email
+    BE->>DB: 按 FeishuOpenID 查找或创建用户
+    BE->>BE: 生成 JWT / Refresh Token
+    BE-->>FE: {"access_token":"...","role":"student"}
+    FE->>FE: 保存会话，进入业务页面
+```
+
+### `POST /api/v1/auth/feishu` — 飞书授权码登录
+
+**请求体：**
+
+```json
+{
+  "code": "xxxxxxxxxxxxxx"
+}
+```
+
+**响应（200）：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "opaque_refresh_token",
+    "token_type": "Bearer",
+    "expires_in": 900,
+    "refresh_expires_in": 1209600,
+    "user_id": 8,
+    "username": "student@example.com",
+    "role": "student",
+    "name": "测试学生"
+  }
+}
+```
+
+常见失败场景：
+
+- 飞书应用未配置或环境变量未生效
+- `code` 无效或已过期
+- 飞书开放平台权限未发布或未授权
+- 后端无法获取 `open_id`
+
+### `POST /api/v1/feishu/notify` — 发送飞书机器人通知
+
+该接口需要先登录，再由后端转发到飞书自定义机器人 Webhook。
+
+**请求体：**
+
+```json
+{
+  "content": "你的关键词 + 作业提交成功通知"
+}
+```
+
+**响应（200）：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "sent": true
+  }
+}
+```
+
+**错误场景：**
+
+- 未登录：401
+- 未配置 `FEISHU_BOT_WEBHOOK`：400
+- Webhook 被关键词、签名或 IP 白名单拦截：400
 
 ---
 

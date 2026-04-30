@@ -65,7 +65,8 @@ export default defineConfig({
                         { text: '故障排查', link: '/03-how-to-guides/deployment/troubleshooting' },
                         { text: '监控运维', link: '/03-how-to-guides/deployment/monitoring' },
                         { text: '备份与恢复', link: '/03-how-to-guides/deployment/backup-recovery' },
-                        { text: '企业微信配置', link: '/03-how-to-guides/deployment/wechat_work_guide' }
+                        { text: '企业微信配置', link: '/03-how-to-guides/deployment/wechat_work_guide' },
+                        { text: '飞书配置与部署', link: '/03-how-to-guides/deployment/feishu-guide' }
                     ]
                 }
             ],

@@ -14,3 +14,4 @@
 - [AI 模型部署](./ai-model-deployment-guide.md)
 - [NPU 分层部署策略](./npu-tiered-deployment.md)
 - [企业微信部署](./wechat_work_guide.md)
+- [飞书集成部署](./feishu-guide.md)

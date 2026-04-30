@@ -375,7 +375,7 @@ export default function App() {
 npm run dev
 ```
 
-Expected: Vite dev server running at http://localhost:5173, no compile errors.
+Expected: Vite dev server running at `http://localhost:5173`, no compile errors.
 
 - [ ] **Step 12: Commit**
 
@@ -1345,7 +1345,7 @@ export default function ChatPage() {
 npm run dev
 ```
 
-Navigate to http://localhost:5173 — should redirect to `/login`. The login form should render with email/password inputs and login/register tabs.
+Navigate to `http://localhost:5173` — should redirect to `/login`. The login form should render with email/password inputs and login/register tabs.
 
 - [ ] **Step 6: Commit**
 
@@ -2081,7 +2081,7 @@ npm run dev
 ```
 
 Checklist (manual):
-- [ ] Navigate to http://localhost:5173 → redirected to `/login`
+- [ ] Navigate to `http://localhost:5173` → redirected to `/login`
 - [ ] Attempt register with `test@gmail.com` → error: "请使用 HUST 校园邮箱"
 - [ ] Register with `test@stu.hust.edu.cn` + password ≥8 chars → "注册成功，请登录"
 - [ ] Login with same credentials → redirected to `/`

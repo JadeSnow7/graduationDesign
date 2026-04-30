@@ -89,7 +89,7 @@ cd hust-undergrad-thesis && git add chapters/chapter1.tex && git commit -m "thes
 
 ```latex
 \section{学术写作规范的本体建模研究}
-在知识表示领域，已有多种针对学术文档与论证结构的本体（Ontology）框架。AO（Argument Ontology）\cite{toulmin1958}对论证的"声明—数据—支撑"结构进行了形式化建模；ScholarlyAO 在此基础上延伸至学术论文场景，定义了研究主张、证据引用与研究对象等节点类型。MEO（Manuscript Exchange Ontology）则关注出版流程中的文档元数据。上述框架在论证组织层面覆盖较好，但均未针对具体课程的写作规范（如 HUST 学位论文格式要求、GB/T 7714 引用格式）进行结构化建模。
+在知识表示领域，已有多种针对学术文档与论证结构的本体（Ontology）框架。AO（Argument Ontology）\cite{toulmin1958}对论证的"声明—数据—支撑"结构进行了形式化建模；ScholarlyAO 在此基础上延伸至学术论文场景，定义了研究主张、证据引用与研究对象等节点类型。MEO（Manuscript Exchange Ontology）则关注出版流程中的文档元数据。上述框架在论证组织层面覆盖较好，但均未针对具体课程的写作规范（如 学位论文格式要求、GB/T 7714 引用格式）进行结构化建模。
 
 本文在已有框架的基础上，采用"复用通用层 + 扩展课程专属层"的策略：以 AO 的论证节点类型作为骨架，补充引用格式、章节结构与段落功能等具有规则性约束的课程专属节点，并为每个节点关联可检索的证据片段。这种分层策略既保证了与已有工作的可比性，又能适配 HUST 课程的具体规范要求。
 
@@ -234,7 +234,7 @@ cd hust-undergrad-thesis && git add chapters/chapter2.tex references.bib && git 
 本文采用"B+C 双路线"构建知识图谱：C 路线以已有本体为基础层，B 路线通过 LLM 半自动抽取扩展层。
 
 \subsection{C 路线：基础本体映射}
-以 AO（Argument Ontology）的论证结构节点类型为骨架，建立与本文节点类型体系的映射关系：AO 的 \texttt{Claim} 对应本文的\texttt{规范条款}，\texttt{Evidence} 对应\texttt{示例片段}，\texttt{Backing} 对应\texttt{修改建议}。在此基础上，人工整理 HUST 学位论文写作规范与课程讲义，将课程特有规范条款补充为新节点，记录来源文档、页码与所属评价维度。
+以 AO（Argument Ontology）的论证结构节点类型为骨架，建立与本文节点类型体系的映射关系：AO 的 \texttt{Claim} 对应本文的\texttt{规范条款}，\texttt{Evidence} 对应\texttt{示例片段}，\texttt{Backing} 对应\texttt{修改建议}。在此基础上，人工整理 学位论文写作规范与课程讲义，将课程特有规范条款补充为新节点，记录来源文档、页码与所属评价维度。
 
 \subsection{B 路线：LLM 半自动抽取}
 对课程讲义、历年范文与规范文档进行以下流程的半自动处理：
